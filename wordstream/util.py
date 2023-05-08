@@ -1,9 +1,17 @@
+# Imports
 import pandas as pd
+import math
+
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from operator import add
 
+# Definitions
+ROMAN_NUMERAL = {'M': 1000, 'D': 500, 'C': 100, 'L': 50, 'X': 10, 'V': 5, 'I': 1}
+
+
+# Classes
 @dataclass
 class WordStreamData:
     df: pd.DataFrame
@@ -15,6 +23,40 @@ class Word:
     text: str
     frequency: int
     sudden: float
+
+
+# Functions
+def int_to_roman(n: int):
+    div = 1
+    while n >= div:
+        div *= 10
+    div /= 10
+    res = ""
+    while n:
+        # main significant digit extracted
+        # into lastNum
+        last_num = int(n / div)
+        if last_num <= 3:
+            res += (ROMAN_NUMERAL[div] * last_num)
+        elif last_num == 4:
+            res += (ROMAN_NUMERAL[div] +
+                    ROMAN_NUMERAL[div * 5])
+        elif 5 <= last_num <= 8:
+            res += (ROMAN_NUMERAL[div * 5] +
+                    (ROMAN_NUMERAL[div] * (last_num - 5)))
+        elif last_num == 9:
+            res += (ROMAN_NUMERAL[div] +
+                    ROMAN_NUMERAL[div * 10])
+        n = math.floor(n % div)
+        div /= 10
+    return res
+
+
+def roman_to_int(s: str):
+    res, p = 0, 'I'
+    for c in s[::-1]:
+        res, p = res - ROMAN_NUMERAL[c] if ROMAN_NUMERAL[c] < ROMAN_NUMERAL[p] else res + ROMAN_NUMERAL[c], c
+    return res
 
 
 def load_data(path: str, time_col: str = "time", drop: tuple[str] = ("source",)) -> WordStreamData:
