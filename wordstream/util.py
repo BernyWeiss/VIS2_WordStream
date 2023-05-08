@@ -90,9 +90,16 @@ def calculate_sudden(df: pd.DataFrame, topics: list[str], top: int | None = None
     return df
 
 
-def load_fact_check(top: int | None = None, start: datetime = datetime(year=2012, month=1, day=1)) -> WordStreamData:
+def group_by_date(df: pd.DataFrame, freq: str = "MS", group_col: str = "time"):
+    df_grouped = df.groupby(pd.Grouper(key=group_col, freq=freq))
+    df_concat = df_grouped.agg(lambda group: [e for l in group for e in l]).reset_index(names=[group_col])
+    return df_concat
+
+
+def load_fact_check(start: datetime = datetime(year=2013, month=1, day=1), end=datetime(year=2013, month=12, day=31)) -> WordStreamData:
     data = load_data("../../data/FactCheck.tsv")
-    data.df = data.df[data.df.time >= start].reset_index(drop=True)
+    data.df = group_by_date(data.df)
+    data.df = data.df[(data.df.time >= start) & (data.df.time <= end)].reset_index(drop=True)
     data.df = calculate_word_frequency(data.df, data.topics)
-    data.df = calculate_sudden(data.df, data.topics, top)
+    data.df = calculate_sudden(data.df, data.topics, top=15)
     return data
