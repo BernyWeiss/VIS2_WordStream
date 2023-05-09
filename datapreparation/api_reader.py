@@ -21,28 +21,7 @@ class LegislativeBody(Enum):
     FEDERAL_ASSEMBLY = "BR"
 
 
-@dataclass
-class RomanNumeral:
-    decimal: int
-    roman: str = field(init=False)
-
-    def __post_init(self):
-        self.roman = int_to_roman(self.decimal)
-
-    # Functions
-
-
-@dataclass
-class DocumentLink:
-    title: str
-    link: str
-    type: str
-
-
-@dataclass
-class DocumentLinks:
-    links: list[DocumentLink]
-
+# Functions
 
 def add_value_to_request_body(req_body: dict, body_key: str, body_value) -> dict:
     to_add = []
