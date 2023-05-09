@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Callable
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.patches import Rectangle
 
 from wordstream.boxes import build_boxes
 from wordstream.util import WordStreamData, load_fact_check, Word
@@ -44,10 +46,25 @@ def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacemen
     else:
         return False
 
+
+def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame]):
+    for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
+        topic, topic_boxes = tb
+        for x in topic_boxes.index:
+            box = topic_boxes.loc[x]
+            ax.add_patch(Rectangle((x, box.y), box.width, box.height, color=col))
+
+
+
 if __name__ == '__main__':
     data = load_fact_check()
     boxes = build_boxes(data, 1000)
-    test_placement = WordPlacement(x=10, y=-10, width=30, height=5, word=Word(text="", frequency=0, sudden=0))
-    p = placed_in_box(boxes, "person", test_placement)
-    print(p)
+    fig, ax = plt.subplots(1, 1)
+    debug_draw_boxes(ax, boxes)
+    ax.set_xlim(0, 1000)
+    ax.set_ylim(-150, 150)
+    plt.show()
+    # test_placement = WordPlacement(x=10, y=-10, width=30, height=5, word=Word(text="", frequency=0, sudden=0))
+    # p = placed_in_box(boxes, "person", test_placement)
+    # print(p)
 
