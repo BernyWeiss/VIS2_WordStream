@@ -2,14 +2,14 @@
 import pandas as pd
 import math
 
+from collections.abc import Sequence
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from operator import add
 
-# Definitions
-ROMAN_NUMERAL = {'M': 1000, 'D': 500, 'C': 100, 'L': 50, 'X': 10, 'V': 5, 'I': 1}
 
+# Definitions
 
 # Classes
 @dataclass
@@ -26,37 +26,16 @@ class Word:
 
 
 # Functions
-def int_to_roman(n: int):
-    div = 1
-    while n >= div:
-        div *= 10
-    div /= 10
-    res = ""
-    while n:
-        # main significant digit extracted
-        # into lastNum
-        last_num = int(n / div)
-        if last_num <= 3:
-            res += (ROMAN_NUMERAL[div] * last_num)
-        elif last_num == 4:
-            res += (ROMAN_NUMERAL[div] +
-                    ROMAN_NUMERAL[div * 5])
-        elif 5 <= last_num <= 8:
-            res += (ROMAN_NUMERAL[div * 5] +
-                    (ROMAN_NUMERAL[div] * (last_num - 5)))
-        elif last_num == 9:
-            res += (ROMAN_NUMERAL[div] +
-                    ROMAN_NUMERAL[div * 10])
-        n = math.floor(n % div)
-        div /= 10
-    return res
-
-
-def roman_to_int(s: str):
-    res, p = 0, 'I'
-    for c in s[::-1]:
-        res, p = res - ROMAN_NUMERAL[c] if ROMAN_NUMERAL[c] < ROMAN_NUMERAL[p] else res + ROMAN_NUMERAL[c], c
-    return res
+def int_to_roman(n: int) -> str:
+    result = ''
+    allSymbol = ['M', 'CM', 'D', "CD", 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I']
+    value = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    for index in range(len(value)):
+        quotient = n // value[index]  # to know the number of times the symbol should be written
+        symbol = quotient * allSymbol[index]  # to write the symbol in specific times
+        result += symbol  # this is to add the symbol to the result.
+        n = n % value[index]  # this is to get the remainder which will be use again
+    return result
 
 
 def load_data(path: str, time_col: str = "time", drop: tuple[str] = ("source",)) -> WordStreamData:
