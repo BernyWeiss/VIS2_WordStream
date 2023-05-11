@@ -33,6 +33,14 @@ def total_frequencies(data: WordStreamData) -> pd.DataFrame:
     return data.df[data.topics].apply(lambda topic: topic.apply(lambda words: sum([w.frequency for w in words])))
 
 
+def max_y(boxes: dict[str, pd.DataFrame]) -> float:
+    # max = -min since silhouette is symmetrical along y-axis
+    min_stream = list(boxes.keys())[0]
+    return -boxes[min_stream]["y"].min()
+
+
 if __name__ == '__main__':
     data = load_fact_check()
-    build_boxes(data, 1000)
+    boxes = build_boxes(data, 1000)
+    m_y = max_y(boxes)
+    print(m_y)
