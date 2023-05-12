@@ -17,6 +17,7 @@ class WordPlacement:
     width: float
     height: float
     word: Word
+    sprite: np.ndarray | None
 
 
 def place_words(data: WordStreamData, width: int, sizing_func: Callable[[WordPlacement], WordPlacement]):
