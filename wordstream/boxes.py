@@ -3,13 +3,15 @@ import pandas as pd
 from wordstream.util import WordStreamData, load_fact_check
 
 
-def build_boxes(data: WordStreamData, width: int) -> dict[str, pd.DataFrame]:
+def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.DataFrame]:
     tf = total_frequencies(data)  # represents height of box
+    height_scaling = height / tf.sum(axis=1).max()  # scale max frequency to height
+    tf *= height_scaling
     num_boxes = len(data.df)
-    box_width = width // num_boxes
+    box_width = width / num_boxes
 
     # only create index containing x-values -> y values are just frequencies
-    x_index = tf.index.map(lambda i: (i * box_width) + (box_width >> 1))
+    x_index = tf.index.map(lambda i: (i * box_width) + (box_width / 2))
     tf = tf.set_index(x_index)
 
     layers = tf.cumsum(axis=1) - tf  # y starting position of boxes
@@ -41,6 +43,6 @@ def max_y(boxes: dict[str, pd.DataFrame]) -> float:
 
 if __name__ == '__main__':
     data = load_fact_check()
-    boxes = build_boxes(data, 1000)
+    boxes = build_boxes(data, 10, 10)
     m_y = max_y(boxes)
     print(m_y)

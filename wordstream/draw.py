@@ -48,6 +48,10 @@ def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacemen
         return False
 
 
+def place():
+    pass
+
+
 def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame]):
     for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
         topic, topic_boxes = tb
