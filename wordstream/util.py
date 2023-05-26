@@ -1,4 +1,6 @@
 # Imports
+from functools import total_ordering
+
 import pandas as pd
 import math
 
@@ -19,10 +21,17 @@ class WordStreamData:
 
 
 @dataclass
+@total_ordering
 class Word:
     text: str
     frequency: int
     sudden: float
+
+    def __eq__(self, other):
+        return isinstance(other, Word) and self.sudden == other.sudden
+
+    def __lt__(self, other):
+        return isinstance(other, Word) and self.sudden < other.sudden
 
 
 # Functions
@@ -82,3 +91,12 @@ def load_fact_check(start: datetime = datetime(year=2013, month=1, day=1), end=d
     data.df = calculate_word_frequency(data.df, data.topics)
     data.df = calculate_sudden(data.df, data.topics, top=15)
     return data
+
+
+def get_max_sudden(data: WordStreamData):
+    topics_df = data.df[data.topics]
+    return topics_df.apply(
+        lambda col: col.apply(
+            lambda l: max(l, key=lambda w: w.sudden)
+        )
+    ).max(axis=None).sudden
