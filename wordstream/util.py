@@ -85,7 +85,7 @@ def group_by_date(df: pd.DataFrame, freq: str = "MS", group_col: str = "time"):
 
 
 def load_fact_check(start: datetime = datetime(year=2013, month=1, day=1), end=datetime(year=2013, month=12, day=31)) -> WordStreamData:
-    data = load_data("../../data/FactCheck.tsv")
+    data = load_data("../data/FactCheck.tsv")
     data.df = group_by_date(data.df)
     data.df = data.df[(data.df.time >= start) & (data.df.time <= end)].reset_index(drop=True)
     data.df = calculate_word_frequency(data.df, data.topics)

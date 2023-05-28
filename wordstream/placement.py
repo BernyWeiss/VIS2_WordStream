@@ -1,10 +1,9 @@
 from typing import Callable
-
+from dataclasses import dataclass
 import numpy
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from wordstream.draw import WordPlacement
 from wordstream.util import Word
 
 
@@ -14,6 +13,18 @@ def value_map(from_start, from_stop, to_start, to_stop, round_value=False) -> Ca
         return lambda v: round(map_func(v))
     else:
         return map_func
+
+
+@dataclass
+class WordPlacement:
+    x: float
+    y: float
+    width: float
+    height: float
+    font_size: int  # in pt
+    word: Word
+    sprite: np.ndarray | None = None
+    placed: bool = False
 
 
 class Placement:
@@ -38,7 +49,7 @@ class Placement:
 
         self.font_map = value_map(0, max_sudden, self.pt_to_px(min_font_size), self.pt_to_px(max_font_size), round_value=True)
 
-        self.img = Image.new("L", (self.width, self.height))
+        self.img = Image.new("L", (self.width, self.height)) # why does this need 8bit? why not 1?
         self.draw = ImageDraw.Draw(self.img)
         self.font_path = font_path
 
@@ -81,6 +92,8 @@ class Placement:
         word.placed = True
         word.font_size = self.px_to_pt(self.font_map(word.word.sudden))
         self.draw.text(self._word_coord_to_pixel_coord(word), word.word.text, fill=255, font=self.get_font(word), align="left", anchor="lt")
+        print(np.asarray(self.img).sum())
+        return (self, word)
 
     def check_placement(self, word: WordPlacement) -> bool:
         img_crop = self.img.crop(self._word_box_to_pixel_box(word))
@@ -93,12 +106,13 @@ class Placement:
 
 if __name__ == '__main__':
     word = WordPlacement(x=0, y=0, height=0, width=0, font_size=0, word=Word("test", frequency=3, sudden=3))
-    placement = Placement(10, 10, ppi=100, min_font_size=10, max_sudden=10, max_font_size=30, font_path="../fonts/RobotoMono-VariableFont_wght.ttf")
+    placement = Placement(10, 4, ppi=100, min_font_size=10, max_sudden=10, max_font_size=30, font_path="../fonts/RobotoMono-VariableFont_wght.ttf")
 
     placement.get_size(word)
     placement.get_sprite(word)
 
     print(placement.check_placement(word))
     placement.place(word)
+    print(np.asarray(placement.img).sum())
     word.x = 0.1
     print(placement.check_placement(word))

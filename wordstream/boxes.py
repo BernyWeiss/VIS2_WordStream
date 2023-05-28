@@ -1,7 +1,17 @@
+from dataclasses import dataclass
 import pandas as pd
 
 from wordstream.util import WordStreamData, load_fact_check
 
+@dataclass
+class Box:
+    x: float
+    y: float
+    width: float
+    height: float
+
+def box_from_row(row) -> Box:
+    return Box(row.name, row['y'], row['width'], row['height'])
 
 def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.DataFrame]:
     tf = total_frequencies(data)  # represents height of box
@@ -29,6 +39,8 @@ def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.D
         boxes[topic] = topic_df
 
     return boxes
+
+
 
 
 def total_frequencies(data: WordStreamData) -> pd.DataFrame:
