@@ -32,9 +32,11 @@ class Placement:
         # interpret width and height as inches and calculate pixel width and height from ppi
         #  + font size from pt to px
         self.ppi = ppi
+        self.width = width
+        self.height = height
 
         self.width_map = value_map(0, width, 0, width*ppi, round_value=True)
-        self.width = self.width_map(width)
+        self.width_px = self.width_map(width)
 
         # since original height is centered around 0 we map from -height/2 and height/2
         self.height_map = value_map(-height/2, height/2, 0, height*ppi, round_value=True)
@@ -45,11 +47,11 @@ class Placement:
 
         self.box_height_map = value_map(0, height, 0, height*ppi, round_value=True)
         self.inv_box_height_map = value_map(0, height*ppi, 0, height, round_value=False)
-        self.height = self.box_height_map(height)
+        self.height_px = self.box_height_map(height)
 
         self.font_map = value_map(0, max_sudden, self.pt_to_px(min_font_size), self.pt_to_px(max_font_size), round_value=True)
 
-        self.img = Image.new("L", (self.width, self.height)) # why does this need 8bit? why not 1?
+        self.img = Image.new("L", (self.width_px, self.height_px)) # why does this need 8bit? why not 1?
         self.draw = ImageDraw.Draw(self.img)
         self.font_path = font_path
 

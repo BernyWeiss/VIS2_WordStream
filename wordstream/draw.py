@@ -10,28 +10,35 @@ from matplotlib.patches import Rectangle
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 from wordstream.boxes import build_boxes, Box, box_from_row
 from wordstream.util import WordStreamData, load_fact_check
 from wordstream.placement import Placement, WordPlacement
 
 
 def place_words(data: WordStreamData, width: int, height: int, sizing_func: Callable[[WordPlacement], WordPlacement]):
-    ppi = 500
+    ppi = 200
     boxes = build_boxes(data, width, height)
-    placement = Placement(round(width), round(height), ppi, 5, 6,12,"../fonts/RobotoMono-VariableFont_wght.ttf")
+    placement = Placement(round(width), round(height), ppi, 5, 5, 15, "../fonts/RobotoMono-VariableFont_wght.ttf")
     test_topic = data.topics[0]
     first_box = boxes[test_topic].iloc[0]
     box_to_place_in = box_from_row(first_box)
-    words_for_box = data.df.loc[0,test_topic]
+    words_for_box = data.df.loc[0, test_topic]
     for word in words_for_box:
-        w_placement = WordPlacement(0,0,0,0,0,word=word)
+        w_placement = WordPlacement(0, 0, 0, 0, 0, word=word)
         w_placement = placement.get_size(w_placement)
         w_placement = placement.get_sprite(w_placement)
         place(w_placement, placement, box_to_place_in, test_topic)
-        #print(f'set {(np.asarray(placement.img)>0).sum()} pixeles of the array')
-    return placement
 
+    fig, ax = plt.subplots(1, 1, figsize=(width, height))
+    ax.imshow(np.asarray(placement.img))
+    x_px = placement.width_map(box_to_place_in.x)
+    y_px = placement.height_map(box_to_place_in.y)
+    height_px = placement.box_height_map(box_to_place_in.height)
+    width_px = placement.box_width_map(box_to_place_in.width)
+    ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor="red", facecolor="none"))
+    plt.show(dpi=ppi)
+
+    return placement
 
 
 def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacement, check_individual: bool = False):
@@ -59,13 +66,12 @@ def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacemen
 
 
 def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
-    bw = placement.width
-    bh = placement.height
     maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
-    startX = box.x + (box.width * (random.random() + .5) /2)
-    startY = box.y + (box.height * (random.random() + .5) /2)
+    startX = box.x + (box.width * (random.random() + .5) / 2)
+    startY = box.y + (box.height * (random.random() + .5) / 2)
     s = achemedeanSpiral([box.width, box.height])
     dt = 1 if random.random() < .5 else -1
+    dt *= word.height
     t = -dt
     dxdy, dx, dy = None, None, None
     word.x = startX
@@ -73,7 +79,7 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
     word.placed = False
 
     while True:
-        t+=dt
+        t += dt
         dxdy = s(t)
         if not dxdy:
             break
@@ -87,14 +93,19 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
         word.x = startX + dx
         word.y = startY + dy
 
-        #print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
+        # print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
 
-        #if placed_in_box(boxes, word)
-        if word.x < 0 or word.y < -(placement.height/2) or word.x + word.width > placement.width or word.y + word.height > placement.height/2:
+        # check if word is placed inside the canvas first
+        if word.x < 0 or word.y < -(
+                placement.height / 2) or word.x + word.width > placement.width or word.y + word.height > placement.height / 2:
             continue
+        # check if word is placed inside the current box
+        if word.x < box.x or word.y < box.y or word.x + word.width > box.x + box.width or word.y + word.height > box.y + box.height:
+            continue
+
         if placement.check_placement(word):
             placement.place(word)
-            print(f"Success placing {word.word.text} with {(word.sprite>0).sum()} pixels ")
+            print(f"Success placing {word.word.text} with {(word.sprite > 0).sum()} pixels ")
             break
 
 
@@ -146,12 +157,8 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame]):
 if __name__ == '__main__':
     data = load_fact_check()
 
-    img = place_words(data, 10, 4, None)
+    img = place_words(data, 30, 12, None)
 
-
-    array = np.asarray(img.img)
-    plt.imshow(array)
-    plt.show()
     # boxes = build_boxes(data, 1000, 400)
     # fig, ax = plt.subplots(1, 1)
     # debug_draw_boxes(ax, boxes)
