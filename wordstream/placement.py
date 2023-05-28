@@ -92,7 +92,6 @@ class Placement:
         word.placed = True
         word.font_size = self.px_to_pt(self.font_map(word.word.sudden))
         self.draw.text(self._word_coord_to_pixel_coord(word), word.word.text, fill=255, font=self.get_font(word), align="left", anchor="lt")
-        print(np.asarray(self.img).sum())
         return (self, word)
 
     def check_placement(self, word: WordPlacement) -> bool:
@@ -105,7 +104,7 @@ class Placement:
 
 
 if __name__ == '__main__':
-    word = WordPlacement(x=0, y=0, height=0, width=0, font_size=0, word=Word("test", frequency=3, sudden=3))
+    word = WordPlacement(x=10, y=10, height=0, width=0, font_size=0, word=Word("test", frequency=3, sudden=3))
     placement = Placement(10, 4, ppi=100, min_font_size=10, max_sudden=10, max_font_size=30, font_path="../fonts/RobotoMono-VariableFont_wght.ttf")
 
     placement.get_size(word)

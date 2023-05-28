@@ -17,9 +17,9 @@ from wordstream.placement import Placement, WordPlacement
 
 
 def place_words(data: WordStreamData, width: int, height: int, sizing_func: Callable[[WordPlacement], WordPlacement]):
-    ppi = 100
+    ppi = 500
     boxes = build_boxes(data, width, height)
-    placement = Placement(round(width/ppi), round(height/ppi), ppi, 5, 10,30,"../fonts/RobotoMono-VariableFont_wght.ttf")
+    placement = Placement(round(width), round(height), ppi, 5, 6,12,"../fonts/RobotoMono-VariableFont_wght.ttf")
     test_topic = data.topics[0]
     first_box = boxes[test_topic].iloc[0]
     box_to_place_in = box_from_row(first_box)
@@ -28,13 +28,9 @@ def place_words(data: WordStreamData, width: int, height: int, sizing_func: Call
         w_placement = WordPlacement(0,0,0,0,0,word=word)
         w_placement = placement.get_size(w_placement)
         w_placement = placement.get_sprite(w_placement)
-        w_placement.x = placement.inv_box_width_map(w_placement.x)
-        w_placement.y = placement.inv_box_height_map(w_placement.y)
-        w_placement = place(w_placement, placement, box_to_place_in)
-        placement.place(w_placement)
-        print(f'set {(np.asarray(placement.img)>0).sum()} pixeles of the array')
-
-    print("")
+        place(w_placement, placement, box_to_place_in, test_topic)
+        #print(f'set {(np.asarray(placement.img)>0).sum()} pixeles of the array')
+    return placement
 
 
 
@@ -62,12 +58,12 @@ def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacemen
         return False
 
 
-def place(word: WordPlacement, placement: Placement, box: Box):
+def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
     bw = placement.width
     bh = placement.height
-    maxDelta = int((box.width * box.width + box.height * box.height) ** 0.5)
-    startX = int(box.x + (box.width * (random.random() + .5) /2))
-    startY = int(box.y + (box.height * (random.random() + .5) /2))
+    maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
+    startX = box.x + (box.width * (random.random() + .5) /2)
+    startY = box.y + (box.height * (random.random() + .5) /2)
     s = achemedeanSpiral([box.width, box.height])
     dt = 1 if random.random() < .5 else -1
     t = -dt
@@ -82,8 +78,8 @@ def place(word: WordPlacement, placement: Placement, box: Box):
         if not dxdy:
             break
 
-        dx = int(dxdy[0])
-        dy = int(dxdy[1])
+        dx = dxdy[0]
+        dy = dxdy[1]
 
         if max(abs(dx), abs(dy)) >= maxDelta:
             break
@@ -91,13 +87,15 @@ def place(word: WordPlacement, placement: Placement, box: Box):
         word.x = startX + dx
         word.y = startY + dy
 
-        print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
+        #print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
 
+        #if placed_in_box(boxes, word)
         if word.x < 0 or word.y < -(placement.height/2) or word.x + word.width > placement.width or word.y + word.height > placement.height/2:
             continue
         if placement.check_placement(word):
+            placement.place(word)
+            print(f"Success placing {word.word.text} with {(word.sprite>0).sum()} pixels ")
             break
-    return word
 
 
 def achemedeanSpiral(size):
@@ -148,11 +146,12 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame]):
 if __name__ == '__main__':
     data = load_fact_check()
 
-    place_words(data, 1000, 400, None)
+    img = place_words(data, 10, 4, None)
 
 
-
-
+    array = np.asarray(img.img)
+    plt.imshow(array)
+    plt.show()
     # boxes = build_boxes(data, 1000, 400)
     # fig, ax = plt.subplots(1, 1)
     # debug_draw_boxes(ax, boxes)
