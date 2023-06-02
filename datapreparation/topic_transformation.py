@@ -1,6 +1,8 @@
 # Imports
+import string
 from datetime import datetime
 
+import nltk.corpus
 import pandas as pd
 import numpy as np
 import json
@@ -10,7 +12,11 @@ from pdfminer.high_level import extract_text
 import requests as rq
 from bs4 import BeautifulSoup
 
+from nltk.corpus import stopwords as sw
+from nltk.tokenize import word_tokenize
 # Definitions
+
+decision_needed =  0
 
 PARTY_MAPPING = {'V': "ÖVP",
                  'S': "SPÖ",
@@ -18,6 +24,8 @@ PARTY_MAPPING = {'V': "ÖVP",
                  'L': "Liberales Forum",
                  'G': "Grüne"}
 
+
+ADDITIONAL_STOPWORDS = ["dr", "mag"]
 
 # Functions
 
@@ -68,6 +76,74 @@ def generate_eurovoc_tsv(df, path):
     topics_df.to_csv(path_or_buf=path + '/' + topics_filename, sep='\t')
 
 
+def generate_fulltext_tsv(df: pd.DataFrame):
+    df["DocumentLinks"] = df["DocumentLinks"].fillna("[]")
+    df["DocumentLinks"] = df["DocumentLinks"].apply(lambda x: x.replace("'", '"'))
+    df = add_documents_datatypes(df)
+
+    document_titles = list()
+
+    # find different documents and their types to setup rules for choosing it
+    #df.DocumentLinks.apply(lambda x: [document_titles.append(f"Typ: {doc['type']}; title: {doc['title']}") for doc in json.loads(x)])
+    #print(set(document_titles))
+
+    df["document_text"] = df.DocumentLinks.apply(lambda x: choose_document_and_return_text(json.loads(x)))
+
+    global decision_needed
+    print(f' Found {decision_needed} motions where decision was needed')
+    # pdf_path = json.loads(df.DocumentLinks[0])[0]["link"]
+    # html_path = json.loads(df.DocumentLinks[0])[1]["link"]
+    # get_pdf_and_extract_text(pdf_path)
+    # text = get_html_and_extract_text(html_path)
+    # word_list = preprocess_text(text)
+    print("Parsing fulltext done")
+
+
+def choose_document_and_return_text(doc_links: list) -> str:
+    if len(doc_links)==0:
+        print("No Doc Found")
+        return ""
+    try:
+        if len(doc_links)==1:
+            if doc_links[0]["type"].lower() == "html":
+                return get_html_and_extract_text(doc_links[0]["link"])
+            elif doc_links[0]["type"].lower() == "pdf":
+                return get_pdf_and_extract_text(doc_links[0]["link"])
+            else:
+                print(f"Unknown document type: {doc_links[0]}")
+                return ""
+
+        doctypes = [doc_link["type"].lower() for doc_link in doc_links]
+
+        # Use HTML if there is one. otherwise check how many PDFs there are and find the best one
+        if "html" in doctypes:
+            link = doc_links[doctypes.index("html")]["link"]
+            return get_html_and_extract_text(link)
+        pdf_indices = [i for i, j in enumerate(doctypes) if j == 'pdf']
+        if len(pdf_indices)==0:
+            # no PDF found
+            print(f"No PDF document found. Doctypes are: {pdf_indices}")
+            return ""
+        if len(pdf_indices)==1:
+            return get_pdf_and_extract_text(doc_links[pdf_indices[0]]["link"])
+
+        if len(pdf_indices)>1:
+            for i in pdf_indices:
+                print(f'Doctitles where there are multiple pdfs: {i}:{doc_links[i]["title"]}')
+            doc_link = decide_on_doc(doc_links[pdf_indices])
+    except KeyError as e:
+        print(KeyError)
+        return ""
+
+
+def decide_on_doc(doc_links: list) -> str:
+    global decision_needed
+    decision_needed += 1
+    return ""
+    pass
+
+
+
 def has_doctype(doc_dict_list: dict, doctype: str) -> bool:
     for doc_dict in doc_dict_list:
         if doc_dict.keys().__contains__("type"):
@@ -85,20 +161,7 @@ def add_documents_datatypes(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def generate_fulltext_tsv(df: pd.DataFrame):
-    df["DocumentLinks"] = df["DocumentLinks"].fillna("[]")
-    df["DocumentLinks"] = df["DocumentLinks"].apply(lambda x: x.replace("'", '"'))
-    df = add_documents_datatypes(df)
 
-    pdf_path = json.loads(df.DocumentLinks[0])[0]["link"]
-    html_path = json.loads(df.DocumentLinks[0])[1]["link"]
-    get_pdf_and_extract_text(pdf_path)
-    get_html_and_extract_text(html_path)
-
-
-    for idx, row in df.iterrows():
-        if row.checkThis:
-            print(row.DocumentLinks)
 
 def get_html_and_extract_text(relative_link: str) -> str:
     base_link = "https://www.parlament.gv.at"
@@ -112,8 +175,7 @@ def get_html_and_extract_text(relative_link: str) -> str:
 
     # get text
     text = soup.get_text()
-
-    print(text)
+    return text
 
 
 def get_pdf_and_extract_text(relative_link: str) -> str:
@@ -126,7 +188,21 @@ def get_pdf_and_extract_text(relative_link: str) -> str:
 
     text = extract_text("example.pdf")
 
-    print(text)
+    return text
+
+def preprocess_text(text: str) -> list[str]:
+    tokenized_text = word_tokenize(text, "german")
+
+    lower_text = [word.casefold() for word in tokenized_text]
+
+    stopwords = sw.words("german")
+
+    # Adds more words to stopwordlist.
+    stopwords.extend(ADDITIONAL_STOPWORDS)
+    clean_text = [word for word in lower_text if not word in stopwords and word not in string.punctuation]
+
+    return clean_text
+
 
 # Main
 
