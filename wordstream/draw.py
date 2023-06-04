@@ -27,7 +27,7 @@ def place_words(data: WordStreamData, width: int, height: int, sizing_func: Call
         w_placement = WordPlacement(0, 0, 0, 0, 0, word=word)
         w_placement = placement.get_size(w_placement)
         w_placement = placement.get_sprite(w_placement)
-        place(w_placement, placement, box_to_place_in, test_topic)
+        place(w_placement, placement, box_to_place_in, topic_boxes=boxes[test_topic])
 
     fig, ax = plt.subplots(1, 1, figsize=(width, height))
     ax.imshow(np.asarray(placement.img))
@@ -41,31 +41,35 @@ def place_words(data: WordStreamData, width: int, height: int, sizing_func: Call
     return placement
 
 
-def placed_in_box(boxes: dict[str, pd.DataFrame], topic: str, word: WordPlacement, check_individual: bool = False):
-    topic_box = boxes[topic]
-    x = topic_box.index.values
-    box_idx = np.where(x <= word.x)[0].max(initial=0)
+def check_word_in_box(word: WordPlacement, box_idx: int, x: np.ndarray, boxes: pd.DataFrame, check_individual: bool):
     box_x = x[box_idx]
-    box = topic_box.loc[box_x]
+    box = boxes.loc[box_x]
 
     # if first box check if word is outside of box
     if box_x == x[0] and word.x < box_x:
         return False
 
-    # if last box of we only consider an individual box, check if word end is outside of box
+    # if last box, or we only consider an individual box, check if word end is outside of single box
     if (box_x == x[-1] or check_individual) and word.x + word.width > box_x + box.width:
         return False
 
     word_bottom_in_box = box.y <= word.y <= box.y + box.height
     word_top_in_box = box.y <= word.y + word.height <= box.y + box.height
 
-    if word_bottom_in_box and word_top_in_box:
-        return True
-    else:
-        return False
+    return word_bottom_in_box and word_top_in_box
 
 
-def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
+def placed_in_box(topic_boxes: pd.DataFrame, word: WordPlacement, check_individual: bool = False):
+    x = topic_boxes.index.values
+    box_idx = np.where(x <= word.x)[0].max(initial=0)
+    box_nxt = np.where(x <= word.x + word.width)[0].max(initial=0)
+
+    word_start_in_box = check_word_in_box(word, box_idx, x, topic_boxes, check_individual)
+    word_end_in_box = check_word_in_box(word, box_nxt, x, topic_boxes, check_individual) if box_idx != box_nxt else True
+    return word_start_in_box and word_end_in_box
+
+
+def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame):
     maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
     startX = box.x + (box.width * (random.random() + .5) / 2)
     startY = box.y + (box.height * (random.random() + .5) / 2)
@@ -96,11 +100,10 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic: str):
         # print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
 
         # check if word is placed inside the canvas first
-        if word.x < 0 or word.y < -(
-                placement.height / 2) or word.x + word.width > placement.width or word.y + word.height > placement.height / 2:
+        if word.x < 0 or word.y < -placement.height / 2 or word.x + word.width > placement.width or word.y + word.height > placement.height / 2:
             continue
-        # check if word is placed inside the current box
-        if word.x < box.x or word.y < box.y or word.x + word.width > box.x + box.width or word.y + word.height > box.y + box.height:
+        # also check if word is placed inside the current box first
+        if not placed_in_box(topic_boxes, word, check_individual=False):
             continue
 
         if placement.check_placement(word):
