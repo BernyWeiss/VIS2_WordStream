@@ -59,10 +59,10 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
         topic_polygon = topic_boxes_to_path(boxes[topic])
         word_placements[topic] = place_topic(placement, data.df[topic], boxes[topic], topic_polygon)
 
-    fig, ax = plt.subplots(1, 1, figsize=(width, height))
-    ax.imshow(np.asarray(placement.img))
-    debug_draw_boxes(ax, boxes, placement)
-    plt.show(dpi=ppi)
+    # fig, ax = plt.subplots(1, 1, figsize=(width, height))
+    # ax.imshow(np.asarray(placement.img))
+    # debug_draw_boxes(ax, boxes, placement)
+    # plt.show(dpi=ppi)
 
     return word_placements
 
