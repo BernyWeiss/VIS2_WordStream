@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import pandas as pd
+from matplotlib.path import Path
 
 from wordstream.util import WordStreamData, load_fact_check
 
@@ -21,7 +22,7 @@ def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.D
     box_width = width / num_boxes
 
     # only create index containing x-values -> y values are just frequencies
-    x_index = tf.index.map(lambda i: (i * box_width) + (box_width / 2))
+    x_index = tf.index.map(lambda i: i * box_width)
     tf = tf.set_index(x_index)
 
     layers = tf.cumsum(axis=1) - tf  # y starting position of boxes
@@ -41,6 +42,15 @@ def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.D
     return boxes
 
 
+def topic_boxes_to_path(topic_boxes: pd.DataFrame) -> Path:
+    # top and bottom points of silhouette polygon
+    top_points = []
+    bottom_points = []
+    for x, box in topic_boxes.iterrows():
+        top_points.append((x, box.y + box.height))
+        bottom_points.append((x, box.y))
+    points = top_points + bottom_points[::-1]
+    return Path(points)
 
 
 def total_frequencies(data: WordStreamData) -> pd.DataFrame:

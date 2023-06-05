@@ -6,11 +6,12 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, PathPatch
+from matplotlib.path import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from wordstream.boxes import build_boxes, Box, box_from_row
+from wordstream.boxes import build_boxes, Box, box_from_row, topic_boxes_to_path
 from wordstream.util import WordStreamData, load_fact_check, Word, get_max_sudden
 from wordstream.placement import Placement, WordPlacement
 
@@ -42,6 +43,23 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
     print(f"Placed {words_placed}/{n_words} in topic!")
 
 
+def place_topic_greedy(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path):
+    # place all words in the first box then second and so on
+    word_placements = words.apply(lambda ws: map(lambda w: init_word_placement(placement, w), ws)).tolist()
+    n_words = words.apply(lambda ws: len(ws)).sum()
+
+    words_tried = 0
+    words_placed = 0
+    while words_tried < n_words:
+        # perform run over next most frequent words in each box
+        for i, words_in_box in enumerate(word_placements):
+            for word_placement in words_in_box:
+                words_tried += 1
+                placed = place(word_placement, placement, box=box_from_row(topic_boxes.iloc[i]), topic_boxes=topic_boxes, topic_polygon=topic_polygon)
+                words_placed += placed
+
+    print(f"Placed {words_placed}/{n_words} in topic!")
+
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]):
     min_font, max_font = font_size
     ppi = 200
@@ -49,7 +67,8 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
     max_sudden = get_max_sudden(data)
     placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-VariableFont_wght.ttf")
     for topic in data.topics:
-        place_topic(placement, data.df[topic], boxes[topic])
+        topic_polygon = topic_boxes_to_path(boxes[topic])
+        place_topic_greedy(placement, data.df[topic], boxes[topic], topic_polygon)
 
     fig, ax = plt.subplots(1, 1, figsize=(width, height))
     ax.imshow(np.asarray(placement.img))
@@ -59,41 +78,18 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
     return placement
 
 
-def check_word_in_box(word: WordPlacement, box_idx: int, x: np.ndarray, boxes: pd.DataFrame, check_individual: bool):
-    box_x = x[box_idx]
-    box = boxes.loc[box_x]
-
-    # if first box check if word is outside of box
-    if box_x == x[0] and word.x < box_x:
-        return False
-
-    # if last box, or we only consider an individual box, check if word end is outside of single box
-    if (box_x == x[-1] or check_individual) and word.x + word.width > box_x + box.width:
-        return False
-
-    word_bottom_in_box = box.y <= word.y <= box.y + box.height
-    word_top_in_box = box.y <= word.y + word.height <= box.y + box.height
-
-    return word_bottom_in_box and word_top_in_box
+def placed_in_polygon(topic_polygon: Path, wp: WordPlacement):
+    word_box = [(wp.x, wp.y), (wp.x + wp.width, wp.y), (wp.x + wp.width, wp.y + wp.height), (wp.x, wp.y + wp.height)]
+    return topic_polygon.contains_path(Path(word_box))
 
 
-def placed_in_box(topic_boxes: pd.DataFrame, word: WordPlacement, check_individual: bool = False):
-    x = topic_boxes.index.values
-    box_idx = np.where(x <= word.x)[0].max(initial=0)
-    box_nxt = np.where(x <= word.x + word.width)[0].max(initial=0)
-
-    word_start_in_box = check_word_in_box(word, box_idx, x, topic_boxes, check_individual)
-    word_end_in_box = check_word_in_box(word, box_nxt, x, topic_boxes, check_individual) if box_idx != box_nxt else True
-    return word_start_in_box and word_end_in_box
-
-
-def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame) -> bool:
+def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame, topic_polygon: Path) -> bool:
     maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
     startX = box.x + (box.width * (random.random() + .5) / 2)
     startY = box.y + (box.height * (random.random() + .5) / 2)
     s = achemedeanSpiral([box.width, box.height])
     dt = 1 if random.random() < .5 else -1
-    dt *= word.height
+    dt *= 0.5 * word.height
     t = -dt
     dxdy, dx, dy = None, None, None
     word.x = startX
@@ -119,7 +115,7 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.D
         if word.x < 0 or word.y < -placement.height / 2 or word.x + word.width > placement.width or word.y + word.height > placement.height / 2:
             continue
         # also check if word is placed inside the current box first
-        if not placed_in_box(topic_boxes, word, check_individual=False):
+        if not placed_in_polygon(topic_polygon, word):
             continue
 
         if placement.check_placement(word):
@@ -170,6 +166,11 @@ spirals = {
 def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
     for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
         topic, topic_boxes = tb
+        # box_path = topic_boxes_to_path(topic_boxes)
+        # max_x = box_path.get_extents().max[0]
+        # from matplotlib.transforms import BboxTransform
+        # box_transformed = box_path.transformed(BboxTransform(boxin=box_path.get_extents(), boxout=ax.dataLim))
+        # ax.add_patch(PathPatch(box_transformed, edgecolor=col, facecolor="none", lw=2))
         for x in topic_boxes.index:
             box = box_from_row(topic_boxes.loc[x])
             x_px = placement.width_map(box.x)
@@ -181,5 +182,5 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
 
 if __name__ == '__main__':
     data = load_fact_check()
-    img = place_words(data, 30, 12, font_size=(5., 40.))
+    img = place_words(data, 24, 12, font_size=(15., 35.))
 
