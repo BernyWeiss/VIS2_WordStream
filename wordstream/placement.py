@@ -26,6 +26,9 @@ class WordPlacement:
     sprite: np.ndarray | None = None
     placed: bool = False
 
+    def to_dict(self) -> dict:
+        return {"x": self.x, "y": self.y, "font_size": self.font_size, "word": self.word.text}
+
 
 class Placement:
     def __init__(self, width: int, height: int, ppi: int, max_sudden: float, min_font_size: float, max_font_size: float, font_path: str):

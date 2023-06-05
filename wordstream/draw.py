@@ -18,27 +18,7 @@ def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
     return wp
 
 
-def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame):
-    # we place most frequent words of each box first, then second etc. -> create iterator for each list of words (map)
-    word_placements = words.apply(lambda ws: map(lambda w: init_word_placement(placement, w), ws)).tolist()
-    n_words = words.apply(lambda ws: len(ws)).sum()
-
-    words_tried = 0
-    words_placed = 0
-    while words_tried < n_words:
-        # perform run over next most frequent words in each box
-        for i, words_in_box in enumerate(word_placements):
-            try:
-                word_placement = next(words_in_box)
-                words_tried += 1
-            except StopIteration:
-                continue
-            placed = place(word_placement, placement, box=box_from_row(topic_boxes.iloc[i]), topic_boxes=topic_boxes)
-            words_placed += placed
-    print(f"Placed {words_placed}/{n_words} in topic!")
-
-
-def place_topic_greedy(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path):
+def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path) -> list[list[dict]]:
     # place all words in the first box then second and so on
     word_placements = words.apply(lambda ws: list(map(lambda w: init_word_placement(placement, w), ws))).tolist()
     n_words = words.apply(lambda ws: len(ws)).sum()
@@ -54,23 +34,26 @@ def place_topic_greedy(placement: Placement, words: pd.Series, topic_boxes: pd.D
                 words_placed += placed
 
     print(f"Placed {words_placed}/{n_words} in topic!")
+    return list(map(lambda ws: list(map(lambda w: w.to_dict(), filter(lambda w: w.placed, ws))), word_placements))
 
-def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]):
+
+def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]) -> dict:
     min_font, max_font = font_size
     ppi = 200
     boxes = build_boxes(data, width, height)
     max_sudden = get_max_sudden(data)
     placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-VariableFont_wght.ttf")
+    word_placements = dict()
     for topic in data.topics:
         topic_polygon = topic_boxes_to_path(boxes[topic])
-        place_topic_greedy(placement, data.df[topic], boxes[topic], topic_polygon)
+        word_placements[topic] = place_topic(placement, data.df[topic], boxes[topic], topic_polygon)
 
     fig, ax = plt.subplots(1, 1, figsize=(width, height))
     ax.imshow(np.asarray(placement.img))
     debug_draw_boxes(ax, boxes, placement)
     plt.show(dpi=ppi)
 
-    return placement
+    return word_placements
 
 
 def placed_in_polygon(topic_polygon: Path, wp: WordPlacement):
@@ -175,7 +158,12 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
             ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor=col, facecolor="none", lw=2))
 
 
-if __name__ == '__main__':
+def draw_fact_check() -> dict:
     data = load_fact_check()
-    img = place_words(data, 24, 12, font_size=(15., 35.))
+    placement = place_words(data, 24, 12, font_size=(15., 35.))
+    return placement
+
+
+if __name__ == '__main__':
+    draw_fact_check()
 
