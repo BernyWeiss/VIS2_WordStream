@@ -28,6 +28,7 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
     n_words = words.apply(lambda ws: len(ws)).sum()
 
     words_tried = 0
+    words_placed = 0
     while words_tried < n_words:
         # perform run over next most frequent words in each box
         for i, words_in_box in enumerate(word_placements):
@@ -36,7 +37,9 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
                 words_tried += 1
             except StopIteration:
                 continue
-            place(word_placement, placement, box=box_from_row(topic_boxes.iloc[i]), topic_boxes=topic_boxes)
+            placed = place(word_placement, placement, box=box_from_row(topic_boxes.iloc[i]), topic_boxes=topic_boxes)
+            words_placed += placed
+    print(f"Placed {words_placed}/{n_words} in topic!")
 
 
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]):
@@ -84,7 +87,7 @@ def placed_in_box(topic_boxes: pd.DataFrame, word: WordPlacement, check_individu
     return word_start_in_box and word_end_in_box
 
 
-def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame):
+def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame) -> bool:
     maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
     startX = box.x + (box.width * (random.random() + .5) / 2)
     startY = box.y + (box.height * (random.random() + .5) / 2)
@@ -112,8 +115,6 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.D
         word.x = startX + dx
         word.y = startY + dy
 
-        # print(f'Try to place word {word.word.text} at x: {word.x}, y: {word.y}')
-
         # check if word is placed inside the canvas first
         if word.x < 0 or word.y < -placement.height / 2 or word.x + word.width > placement.width or word.y + word.height > placement.height / 2:
             continue
@@ -123,8 +124,10 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.D
 
         if placement.check_placement(word):
             placement.place(word)
-            print(f"Success placing {word.word.text} with {(word.sprite > 0).sum()} pixels ")
-            break
+            # print(f"Success placing {word.word.text} with {(word.sprite > 0).sum()} pixels ")
+            return True
+
+    return False
 
 
 def achemedeanSpiral(size):
