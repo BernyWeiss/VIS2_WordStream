@@ -27,7 +27,7 @@ class WordPlacement:
     placed: bool = False
 
     def to_dict(self) -> dict:
-        return {"x": self.x, "y": self.y, "font_size": self.font_size, "word": self.word.text}
+        return {"x": self.x, "y": self.y, "font_size": self.font_size, "text": self.word.text}
 
 
 class Placement:

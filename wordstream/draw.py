@@ -1,5 +1,7 @@
 import random
 import math
+from dataclasses import dataclass
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -11,6 +13,14 @@ from wordstream.util import WordStreamData, load_fact_check, Word, get_max_sudde
 from wordstream.placement import Placement, WordPlacement
 
 
+@dataclass
+class DrawOptions:
+    width: int
+    height: int
+    min_font_size: float
+    max_font_size: float
+
+
 def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
     wp = WordPlacement(0, 0, 0, 0, 0, word=word)
     placement.get_size(wp)
@@ -18,7 +28,7 @@ def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
     return wp
 
 
-def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path) -> list[list[dict]]:
+def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path) -> list[dict]:
     # place all words in the first box then second and so on
     word_placements = words.apply(lambda ws: list(map(lambda w: init_word_placement(placement, w), ws))).tolist()
     n_words = words.apply(lambda ws: len(ws)).sum()
@@ -34,7 +44,8 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
                 words_placed += placed
 
     print(f"Placed {words_placed}/{n_words} in topic!")
-    return list(map(lambda ws: list(map(lambda w: w.to_dict(), filter(lambda w: w.placed, ws))), word_placements))
+    placements_flat = [w for ws in word_placements for w in ws]
+    return list(map(lambda w: w.to_dict(), filter(lambda w: w.placed, placements_flat)))
 
 
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]) -> dict:
@@ -158,12 +169,13 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
             ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor=col, facecolor="none", lw=2))
 
 
-def draw_fact_check() -> dict:
+def draw_fact_check(options: DrawOptions) -> dict:
     data = load_fact_check()
-    placement = place_words(data, 24, 12, font_size=(15., 35.))
+    placement = place_words(data, options.width, options.height, font_size=(options.min_font_size, options.max_font_size))
     return placement
 
 
 if __name__ == '__main__':
-    draw_fact_check()
+    options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=35)
+    draw_fact_check(options)
 
