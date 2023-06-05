@@ -49,6 +49,10 @@ def topic_boxes_to_path(topic_boxes: pd.DataFrame) -> Path:
     for x, box in topic_boxes.iterrows():
         top_points.append((x, box.y + box.height))
         bottom_points.append((x, box.y))
+        if x == topic_boxes.index.max():
+            top_points.append((x + box.width, box.y + box.height))
+            bottom_points.append((x + box.width, box.y))
+
     points = top_points + bottom_points[::-1]
     return Path(points)
 

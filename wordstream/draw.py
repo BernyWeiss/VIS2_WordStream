@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-from typing import Callable
-
 import random
 import math
 import matplotlib.pyplot as plt
@@ -8,8 +5,6 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Rectangle, PathPatch
 from matplotlib.path import Path
-
-from PIL import Image, ImageDraw, ImageFont
 
 from wordstream.boxes import build_boxes, Box, box_from_row, topic_boxes_to_path
 from wordstream.util import WordStreamData, load_fact_check, Word, get_max_sudden
@@ -45,7 +40,7 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
 
 def place_topic_greedy(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path):
     # place all words in the first box then second and so on
-    word_placements = words.apply(lambda ws: map(lambda w: init_word_placement(placement, w), ws)).tolist()
+    word_placements = words.apply(lambda ws: list(map(lambda w: init_word_placement(placement, w), ws))).tolist()
     n_words = words.apply(lambda ws: len(ws)).sum()
 
     words_tried = 0
