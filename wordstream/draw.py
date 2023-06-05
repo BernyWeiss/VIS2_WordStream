@@ -11,31 +11,46 @@ from matplotlib.patches import Rectangle
 from PIL import Image, ImageDraw, ImageFont
 
 from wordstream.boxes import build_boxes, Box, box_from_row
-from wordstream.util import WordStreamData, load_fact_check
+from wordstream.util import WordStreamData, load_fact_check, Word, get_max_sudden
 from wordstream.placement import Placement, WordPlacement
 
 
-def place_words(data: WordStreamData, width: int, height: int, sizing_func: Callable[[WordPlacement], WordPlacement]):
+def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
+    wp = WordPlacement(0, 0, 0, 0, 0, word=word)
+    placement.get_size(wp)
+    placement.get_sprite(wp)
+    return wp
+
+
+def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame):
+    # we place most frequent words of each box first, then second etc. -> create iterator for each list of words (map)
+    word_placements = words.apply(lambda ws: map(lambda w: init_word_placement(placement, w), ws)).tolist()
+    n_words = words.apply(lambda ws: len(ws)).sum()
+
+    words_tried = 0
+    while words_tried < n_words:
+        # perform run over next most frequent words in each box
+        for i, words_in_box in enumerate(word_placements):
+            try:
+                word_placement = next(words_in_box)
+                words_tried += 1
+            except StopIteration:
+                continue
+            place(word_placement, placement, box=box_from_row(topic_boxes.iloc[i]), topic_boxes=topic_boxes)
+
+
+def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]):
+    min_font, max_font = font_size
     ppi = 200
     boxes = build_boxes(data, width, height)
-    placement = Placement(round(width), round(height), ppi, 5, 5, 15, "../fonts/RobotoMono-VariableFont_wght.ttf")
-    test_topic = data.topics[0]
-    first_box = boxes[test_topic].iloc[0]
-    box_to_place_in = box_from_row(first_box)
-    words_for_box = data.df.loc[0, test_topic]
-    for word in words_for_box:
-        w_placement = WordPlacement(0, 0, 0, 0, 0, word=word)
-        w_placement = placement.get_size(w_placement)
-        w_placement = placement.get_sprite(w_placement)
-        place(w_placement, placement, box_to_place_in, topic_boxes=boxes[test_topic])
+    max_sudden = get_max_sudden(data)
+    placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-VariableFont_wght.ttf")
+    for topic in data.topics:
+        place_topic(placement, data.df[topic], boxes[topic])
 
     fig, ax = plt.subplots(1, 1, figsize=(width, height))
     ax.imshow(np.asarray(placement.img))
-    x_px = placement.width_map(box_to_place_in.x)
-    y_px = placement.height_map(box_to_place_in.y)
-    height_px = placement.box_height_map(box_to_place_in.height)
-    width_px = placement.box_width_map(box_to_place_in.width)
-    ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor="red", facecolor="none"))
+    debug_draw_boxes(ax, boxes, placement)
     plt.show(dpi=ppi)
 
     return placement
@@ -149,25 +164,19 @@ spirals = {
 }
 
 
-def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame]):
+def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
     for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
         topic, topic_boxes = tb
         for x in topic_boxes.index:
-            box = topic_boxes.loc[x]
-            ax.add_patch(Rectangle((x, box.y), box.width, box.height, color=col))
+            box = box_from_row(topic_boxes.loc[x])
+            x_px = placement.width_map(box.x)
+            y_px = placement.height_map(box.y)
+            height_px = placement.box_height_map(box.height)
+            width_px = placement.box_width_map(box.width)
+            ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor=col, facecolor="none", lw=2))
 
 
 if __name__ == '__main__':
     data = load_fact_check()
+    img = place_words(data, 30, 12, font_size=(5., 40.))
 
-    img = place_words(data, 30, 12, None)
-
-    # boxes = build_boxes(data, 1000, 400)
-    # fig, ax = plt.subplots(1, 1)
-    # debug_draw_boxes(ax, boxes)
-    # ax.set_xlim(0, 1000)
-    # ax.set_ylim(-200, 200)
-    # plt.show()
-    # test_placement = WordPlacement(x=10, y=-10, width=30, height=5, word=Word(text="", frequency=0, sudden=0))
-    # p = placed_in_box(boxes, "person", test_placement)
-    # print(p)
