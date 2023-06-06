@@ -50,7 +50,7 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
 
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]) -> dict:
     min_font, max_font = font_size
-    ppi = 200
+    ppi = 400
     boxes = build_boxes(data, width, height)
     max_sudden = get_max_sudden(data)
     placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-VariableFont_wght.ttf")
@@ -59,10 +59,10 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
         topic_polygon = topic_boxes_to_path(boxes[topic])
         word_placements[topic] = place_topic(placement, data.df[topic], boxes[topic], topic_polygon)
 
-    # fig, ax = plt.subplots(1, 1, figsize=(width, height))
-    # ax.imshow(np.asarray(placement.img))
-    # debug_draw_boxes(ax, boxes, placement)
-    # plt.show(dpi=ppi)
+    fig, ax = plt.subplots(1, 1, figsize=(width, height))
+    ax.imshow(np.asarray(placement.img))
+    debug_draw_boxes(ax, boxes, placement, word_placements)
+    plt.show(dpi=ppi)
 
     return word_placements
 
@@ -152,14 +152,9 @@ spirals = {
 }
 
 
-def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
+def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement, placements: dict[str, list]):
     for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
         topic, topic_boxes = tb
-        # box_path = topic_boxes_to_path(topic_boxes)
-        # max_x = box_path.get_extents().max[0]
-        # from matplotlib.transforms import BboxTransform
-        # box_transformed = box_path.transformed(BboxTransform(boxin=box_path.get_extents(), boxout=ax.dataLim))
-        # ax.add_patch(PathPatch(box_transformed, edgecolor=col, facecolor="none", lw=2))
         for x in topic_boxes.index:
             box = box_from_row(topic_boxes.loc[x])
             x_px = placement.width_map(box.x)
@@ -167,6 +162,11 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement):
             height_px = placement.box_height_map(box.height)
             width_px = placement.box_width_map(box.width)
             ax.add_patch(Rectangle((x_px, y_px), width_px, height_px, edgecolor=col, facecolor="none", lw=2))
+    for topic, words in placements.items():
+        for word in words:
+            x_px = placement.width_map(word["x"])
+            y_px = placement.height_map(word["y"])
+            ax.plot(x_px,y_px, 'ro')
 
 
 def draw_fact_check(options: DrawOptions) -> dict:
