@@ -3,9 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bokeh.embed import file_html
-from bokeh.io import save
-from bokeh.resources import CDN
 
 from wordstream.draw import draw_fact_check, DrawOptions
 
@@ -64,7 +61,10 @@ def plot_matplotlib():
 
 def plot_bokeh():
     from bokeh.io import curdoc, show
-    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool
+    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle
+    from bokeh.core.properties import value, field
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
 
     options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=45)
     placements = draw_fact_check(options)
@@ -74,6 +74,7 @@ def plot_bokeh():
     plot = Plot(
         title=None, width=options.width*ppi, height=options.height*ppi,
         min_border=0, toolbar_location=None)
+    plot.output_backend = "svg"
 
     hover = HoverTool()
     hover.tooltips = """
@@ -91,13 +92,20 @@ def plot_bokeh():
     plot.add_tools(hover)
 
     for topic, col in zip(topics, ["red", "green", "blue", "purple"]):
-        from bokeh.core.properties import value, field
-        for word in placements[topic]:
-            font_size = pt_to_px(ppi, word["font_size"])
-            glyph = Text(x="x", y="y", text="text", text_color=col, text_font_size="fs", text_baseline="top", text_align="left")
-            glyph.text_font = value("Roboto Mono")
-            ds = ColumnDataSource(dict(x=[word["x"]], y=[word["y"]], text=[word["text"]], fs=[f'{font_size}px'], topic=[topic], col=[col]))
-            plot.add_glyph(ds, glyph)
+        df = pd.DataFrame.from_records(placements[topic])
+        df["font_size"] = df["font_size"].apply(lambda v: f"{pt_to_px(ppi, v)}px")
+        df["topic"] = topic
+        df["col"] = col
+
+        glyph = Text(x="x", y="y", text="text", text_color=col, text_font_size="fs", text_baseline="top",
+                     text_align="left")
+        glyph.text_font = value("Roboto Mono")
+        ds = ColumnDataSource(
+            dict(x=df.x, y=df.y, text=df.text, fs=df.font_size, topic=df.topic, col=df.col))
+        plot.add_glyph(ds, glyph)
+
+        # points = Circle(x="x", y="y")
+        # plot.add_glyph(ds, points)
 
     plot.y_range = Range1d(options.height/2, -options.height/2)
 

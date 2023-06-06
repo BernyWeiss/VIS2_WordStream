@@ -53,7 +53,7 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
     ppi = 400
     boxes = build_boxes(data, width, height)
     max_sudden = get_max_sudden(data)
-    placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-VariableFont_wght.ttf")
+    placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-Medium.ttf")
     word_placements = dict()
     for topic in data.topics:
         topic_polygon = topic_boxes_to_path(boxes[topic])
