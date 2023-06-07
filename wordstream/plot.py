@@ -104,17 +104,23 @@ def plot_bokeh():
             dict(x=df.x, y=df.y, text=df.text, fs=df.font_size, topic=df.topic, col=df.col))
         plot.add_glyph(ds, glyph)
 
-        # points = Circle(x="x", y="y")
-        # plot.add_glyph(ds, points)
+        points = Circle(x="x", y="y")
+        plot.add_glyph(ds, points)
 
     plot.y_range = Range1d(options.height/2, -options.height/2)
 
     curdoc().add_root(plot)
     from bokeh.core.templates import FILE
     import jinja2
-    with open("../fonts/template.html", "r") as f:
+    with open("../fonts/template_custom.html", "r") as f:
         template = jinja2.Template(f.read())
-    html = file_html(plot, CDN, "plot", template=template)
+
+    from bokeh.embed import components
+    plot_script, div = components(plot, wrap_script=True)
+
+    html = template.render(plot_1_script=plot_script, plot_1_div=div)
+
+    # html = file_html(plot, CDN, "plot", template=template)
     with open("plot.html", "w") as f:
         f.write(html)
 
