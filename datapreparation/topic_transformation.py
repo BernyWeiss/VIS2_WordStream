@@ -64,15 +64,15 @@ def import_and_cleanup_csv(path, filename, legislative_period) -> pd.DataFrame:
     return motions_df
 
 
-def generate_eurovoc_tsv(df, path):
-    exploded_eurovoc = df[["Datum", "Fraktionen", "EUROVOC"]].explode(column="Fraktionen")
+def generate_tsv(df, path, filename, column_name):
+    exploded_eurovoc = df[["Datum", "Fraktionen", column_name]].explode(column="Fraktionen")
     aggregate_voc = exploded_eurovoc.groupby(["Datum", "Fraktionen"]).agg(sum)
-    topics_df = aggregate_voc.reset_index().pivot(index="Datum", columns="Fraktionen", values="EUROVOC")
+    topics_df = aggregate_voc.reset_index().pivot(index="Datum", columns="Fraktionen", values=column_name)
     for col in topics_df.columns:
         topics_df[col] = topics_df[col].apply(lambda x: [] if type(x) == float else x)
     topics_df = topics_df.applymap(lambda x: '|'.join(x))
     topics_df = topics_df.fillna("")
-    topics_filename = "eurovoc.tsv"
+    topics_filename = filename
     topics_df.to_csv(path_or_buf=path + '/' + topics_filename, sep='\t')
 
 
@@ -80,15 +80,12 @@ def generate_fulltext_tsv(df: pd.DataFrame):
     df["DocumentLinks"] = df["DocumentLinks"].fillna("[]")
     df["DocumentLinks"] = df["DocumentLinks"].apply(lambda x: x.replace("'", '"'))
     df = add_documents_datatypes(df)
-
     document_titles = list()
-
     # find different documents and their types to setup rules for choosing it
     #df.DocumentLinks.apply(lambda x: [document_titles.append(f"Typ: {doc['type']}; title: {doc['title']}") for doc in json.loads(x)])
     #print(set(document_titles))
-
     df["document_text"] = df.DocumentLinks.apply(lambda x: choose_document_and_return_text(json.loads(x)))
-
+    df["document_text"] = df["document_text"].apply(lambda x: preprocess_text(x))
     global decision_needed
     print(f' Found {decision_needed} motions where decision was needed')
     # pdf_path = json.loads(df.DocumentLinks[0])[0]["link"]
@@ -96,6 +93,9 @@ def generate_fulltext_tsv(df: pd.DataFrame):
     # get_pdf_and_extract_text(pdf_path)
     # text = get_html_and_extract_text(html_path)
     # word_list = preprocess_text(text)
+
+    generate_tsv(df, path,"fulltext.tsv", "document_text")
+
     print("Parsing fulltext done")
 
 
@@ -208,7 +208,7 @@ def preprocess_text(text: str) -> list[str]:
 
 
 if __name__ == '__main__':
-    legislative_period = "XX"
+    legislative_period = "XXI"
     path = "../data/" + legislative_period + "/"
     filename = "antraege.csv"
 
@@ -219,10 +219,7 @@ if __name__ == '__main__':
     generate_fulltext_tsv(only_fractions_and_documents)
 
 
-    # unique_parties = get_unique_fractions(clean_df)
-    # unique_dates = np.unique(clean_df["Datum"])
-
     # use this to generate topic files based on eurovoc
-    # generate_eurovoc_tsv(clean_df, path)
+    generate_tsv(clean_df, path,"eurovoc.tsv", "EUROVOC")
 
     # print(unique_parties)
