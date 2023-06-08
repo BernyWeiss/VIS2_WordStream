@@ -74,11 +74,11 @@ class Placement:
         return inches * 72
 
     def get_font(self, word: WordPlacement) -> ImageFont:
-        return ImageFont.truetype(self.font_path, size=self.font_map(word.word.sudden), layout_engine=ImageFont.LAYOUT_RAQM)
+        return ImageFont.truetype(self.font_path, size=self.font_map(word.word.sudden), layout_engine=ImageFont.LAYOUT_BASIC)
 
     def get_size(self, word: WordPlacement) -> WordPlacement:
         font = self.get_font(word)
-        box_size = self.draw.textbbox((0, 0), word.word.text, anchor="la", features=['-kern'])
+        box_size = self.draw.textbbox((0, 0), word.word.text, font=font, anchor="la")
         # since box size is in pixel we have to inverse map back to inches
         word.width = self.inv_box_width_map(box_size[2])
         word.height = self.inv_box_height_map(box_size[3])
@@ -88,7 +88,7 @@ class Placement:
         # create image the size of the words bounding box -> convert back from inches to px for box size
         test_img = Image.new("L", (self.box_width_map(word.width), self.box_height_map(word.height)))
         draw = ImageDraw.Draw(test_img)
-        draw.text((0, 0), word.word.text, fill=255, align="left", anchor="la", features=['-kern'])
+        draw.text((0, 0), word.word.text, font=self.get_font(word), fill=255, align="left", anchor="la")
 
         word.sprite = numpy.asarray(test_img)
         return word

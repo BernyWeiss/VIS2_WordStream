@@ -109,8 +109,8 @@ def load_parlament_data(periods: list[str])-> WordStreamData:
     time_col = "Datum"
     start = GP_TIME_INTERVALS[periods[0]][0]
     end = GP_TIME_INTERVALS[periods[len(periods)-1]][1]
-    data = load_multiple_periods("../data/","eurovoc.tsv", ["XX", "XXI"], time_col, ())
-    data.df = group_by_date(data.df, group_col=time_col)
+    data = load_multiple_periods("../data/", "fulltext.tsv", ["XX", "XXI"], time_col, ())
+    data.df = group_by_date(data.df, group_col=time_col, freq="Y")
     data.df = data.df[(data.df[time_col] >= start) & (data.df[time_col] <= end)].reset_index(drop=True)
     data.df = calculate_word_frequency(data.df, data.topics)
     data.df = calculate_sudden(data.df, data.topics, top=50)

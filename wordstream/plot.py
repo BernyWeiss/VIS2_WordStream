@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from wordstream.draw import draw_fact_check, DrawOptions
+from wordstream.draw import draw_fact_check, DrawOptions, draw_parlament
 
 font_path = Path("../fonts/RobotoMono-VariableFont_wght.ttf")
 
@@ -67,7 +67,7 @@ def plot_bokeh():
     from bokeh.resources import CDN
 
     options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=45)
-    placements = draw_fact_check(options)
+    placements = draw_parlament(options)
     topics = list(placements.keys())
 
     ppi = 72
@@ -91,7 +91,7 @@ def plot_bokeh():
     """
     plot.add_tools(hover)
 
-    for topic, col in zip(topics, ["red", "green", "blue", "purple"]):
+    for topic, col in zip(topics, ["red", "green", "blue", "purple", "orange"]):
         df = pd.DataFrame.from_records(placements[topic])
         df["font_size"] = df["font_size"].apply(lambda v: f"{pt_to_px(ppi, v)}px")
         df["topic"] = topic
