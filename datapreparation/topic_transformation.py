@@ -25,7 +25,11 @@ PARTY_MAPPING = {'V': "ÖVP",
                  'G': "Grüne"}
 
 
-ADDITIONAL_STOPWORDS = ["dr", "mag"]
+ADDITIONAL_STOPWORDS = ["dr", "mag", "abs.", "abs", "nr", "§§", "nr.", "bundesgesetz", "bundesminister", "abgeordneter", "abgeordnete",
+                        "mitglied", "mitglieder", "gemäss", "abgeordneten", "antrag", "satz", "dr.", "jedoch", "daher",
+                        "wurde", "folgt", "10","angefügt","kraft", "gilt", "sinne", "fassung", "artikel", "bundesregierung", "sowie",
+                        "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "1.", "2.", "''", "``", "bgbl", "geändert",
+                        "nationalrat"]
 
 # Functions
 
@@ -200,7 +204,7 @@ def preprocess_text(text: str) -> list[str]:
     # Adds more words to stopwordlist.
     stopwords.extend(ADDITIONAL_STOPWORDS)
     clean_text = [word for word in lower_text if not word in stopwords and word not in string.punctuation]
-
+    clean_text = [word for word in clean_text if not len(word)==1]
     return clean_text
 
 
@@ -220,6 +224,6 @@ if __name__ == '__main__':
 
 
     # use this to generate topic files based on eurovoc
-    generate_tsv(clean_df, path,"eurovoc.tsv", "EUROVOC")
+    #generate_tsv(clean_df, path,"eurovoc.tsv", "EUROVOC")
 
     # print(unique_parties)
