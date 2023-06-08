@@ -174,10 +174,10 @@ def draw_fact_check(options: DrawOptions) -> dict:
     placement = place_words(data, options.width, options.height, font_size=(options.min_font_size, options.max_font_size))
     return placement
 
-def draw_parlament(options: DrawOptions) -> dict:
+def draw_parlament(options: DrawOptions) -> tuple[dict, WordStreamData]:
     data = load_parlament_data(["XX", "XXI"])
     placement = place_words(data, options.width, options.height, font_size=(options.min_font_size, options.max_font_size))
-    return placement
+    return placement, data
 
 
 if __name__ == '__main__':

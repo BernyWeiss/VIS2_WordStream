@@ -3,8 +3,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bokeh.models import LegendItem, GlyphRenderer
+from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid
 
+from wordstream.boxes import build_boxes
 from wordstream.draw import draw_fact_check, DrawOptions, draw_parlament
 
 font_path = Path("../fonts/RobotoMono-VariableFont_wght.ttf")
@@ -78,11 +79,11 @@ party_name = {
 
 def plot_bokeh():
     from bokeh.io import curdoc, show
-    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend
+    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend, FixedTicker
     from bokeh.core.properties import value
 
-    options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=45)
-    placements = draw_parlament(options)
+    options = DrawOptions(width=20, height=10, min_font_size=15, max_font_size=45)
+    placements, data = draw_parlament(options)
     topics = list(placements.keys())
 
     ppi = 72
@@ -121,12 +122,24 @@ def plot_bokeh():
             dict(x=df.x, y=df.y, text=df.text, fs=df.font_size, topic=df.topic, col=df.col))
         plot.add_glyph(ds, glyph)
 
+        # circles need to actually be drawn so place them outside of plot area as a hack
         ds_legend = ColumnDataSource(dict(col=df.col, x=df.x, y=df.y + 1000))
         points = Circle(x="x", y="y", fill_color="col")
         legend_renderer = plot.add_glyph(ds_legend, points)
-
-        # legend_renderer = GlyphRenderer(data_source=ds, glyph=points)
         topic_glyphs[party_name[topic]] = legend_renderer
+
+    boxes = build_boxes(data, options.width, options.height)
+    x_index = boxes[list(boxes.keys())[0]].index.values.tolist()
+    label_dict = {}
+    for i, s in zip(x_index, data.df["Datum"]):
+        label_dict[i] = str(s.year)
+
+    xaxis = LinearAxis(ticker=FixedTicker(ticks=x_index))
+    plot.add_layout(xaxis, 'below')
+    plot.xaxis[0].major_label_overrides = label_dict
+    plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
+    # plot.xaxis[0].formatter = DatetimeTickFormatter()
+
 
     legend = Legend(
         items=[(p, [t]) for p, t in topic_glyphs.items()],
