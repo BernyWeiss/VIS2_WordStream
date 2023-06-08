@@ -50,7 +50,7 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
 
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]) -> dict:
     min_font, max_font = font_size
-    ppi = 400
+    ppi = 200
     boxes = build_boxes(data, width, height)
     max_sudden = get_max_sudden(data)
     placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/RobotoMono-Medium.ttf")

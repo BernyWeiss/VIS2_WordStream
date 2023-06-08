@@ -88,7 +88,10 @@ def plot_bokeh():
 
     ppi = 72
     plot = Plot(
-        title=None, width=options.width*ppi, height=options.height*ppi,
+        title=None,
+        # width=options.width*ppi, height=options.height*ppi,
+        frame_width=options.width * ppi, frame_height=options.height * ppi,
+        # min_width=options.width * ppi, min_height=options.height * ppi,
         min_border=0, toolbar_location=None)
     plot.output_backend = "svg"
 
@@ -123,7 +126,7 @@ def plot_bokeh():
         plot.add_glyph(ds, glyph)
 
         # circles need to actually be drawn so place them outside of plot area as a hack
-        ds_legend = ColumnDataSource(dict(col=df.col, x=df.x, y=df.y + 1000))
+        ds_legend = ColumnDataSource(dict(col=df.col, x=df.x, y=df.y + 100))
         points = Circle(x="x", y="y", fill_color="col")
         legend_renderer = plot.add_glyph(ds_legend, points)
         topic_glyphs[party_name[topic]] = legend_renderer
@@ -138,8 +141,6 @@ def plot_bokeh():
     plot.add_layout(xaxis, 'below')
     plot.xaxis[0].major_label_overrides = label_dict
     plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
-    # plot.xaxis[0].formatter = DatetimeTickFormatter()
-
 
     legend = Legend(
         items=[(p, [t]) for p, t in topic_glyphs.items()],
@@ -150,6 +151,7 @@ def plot_bokeh():
     plot.add_layout(legend, "left")
 
     plot.y_range = Range1d(options.height/2, -options.height/2)
+    plot.x_range = Range1d(0, max(x_index) + x_index[1])
 
     curdoc().add_root(plot)
     from bokeh.core.templates import FILE
@@ -161,8 +163,6 @@ def plot_bokeh():
     plot_script, div = components(plot, wrap_script=True)
 
     html = template.render(plot_1_script=plot_script, plot_1_div=div)
-
-    # html = file_html(plot, CDN, "plot", template=template)
     with open("plot.html", "w") as f:
         f.write(html)
 
