@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from bokeh.models import LegendItem, GlyphRenderer
 
 from wordstream.draw import draw_fact_check, DrawOptions, draw_parlament
 
@@ -59,12 +60,26 @@ def plot_matplotlib():
     # plt.savefig("../../mat_img.svg")
 
 
+party_col = {
+    "F": "blue",
+    "G": "green",
+    "L": "orange",
+    "S": "red",
+    "V": "black"
+}
+
+party_name = {
+    "F": "FPÖ",
+    "G": "Grüne",
+    "L": "Liberales Forum",
+    "S": "SPÖ",
+    "V": "ÖVP"
+}
+
 def plot_bokeh():
     from bokeh.io import curdoc, show
-    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle
-    from bokeh.core.properties import value, field
-    from bokeh.embed import file_html
-    from bokeh.resources import CDN
+    from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend
+    from bokeh.core.properties import value
 
     options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=45)
     placements = draw_parlament(options)
@@ -91,10 +106,12 @@ def plot_bokeh():
     """
     plot.add_tools(hover)
 
-    for topic, col in zip(topics, ["red", "green", "blue", "purple", "orange"]):
+    topic_glyphs = dict()
+    for topic in topics:
+        col = party_col[topic]
         df = pd.DataFrame.from_records(placements[topic])
         df["font_size"] = df["font_size"].apply(lambda v: f"{pt_to_px(ppi, v)}px")
-        df["topic"] = topic
+        df["topic"] = party_name[topic]
         df["col"] = col
 
         glyph = Text(x="x", y="y", text="text", text_color=col, text_font_size="fs", text_baseline="top",
@@ -104,8 +121,20 @@ def plot_bokeh():
             dict(x=df.x, y=df.y, text=df.text, fs=df.font_size, topic=df.topic, col=df.col))
         plot.add_glyph(ds, glyph)
 
-        points = Circle(x="x", y="y")
-        plot.add_glyph(ds, points)
+        ds_legend = ColumnDataSource(dict(col=df.col, x=df.x, y=df.y + 1000))
+        points = Circle(x="x", y="y", fill_color="col")
+        legend_renderer = plot.add_glyph(ds_legend, points)
+
+        # legend_renderer = GlyphRenderer(data_source=ds, glyph=points)
+        topic_glyphs[party_name[topic]] = legend_renderer
+
+    legend = Legend(
+        items=[(p, [t]) for p, t in topic_glyphs.items()],
+        location="center", orientation="vertical",
+        border_line_color="black",
+        title='Party'
+    )
+    plot.add_layout(legend, "left")
 
     plot.y_range = Range1d(options.height/2, -options.height/2)
 
