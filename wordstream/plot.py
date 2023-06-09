@@ -82,7 +82,7 @@ def plot_bokeh():
     from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend, FixedTicker
     from bokeh.core.properties import value
 
-    options = DrawOptions(width=20, height=10, min_font_size=15, max_font_size=45)
+    options = DrawOptions(width=20, height=10, min_font_size=10, max_font_size=30)
     placements, data = draw_parlament(options)
     topics = list(placements.keys())
 
@@ -92,7 +92,9 @@ def plot_bokeh():
         # width=options.width*ppi, height=options.height*ppi,
         frame_width=options.width * ppi, frame_height=options.height * ppi,
         # min_width=options.width * ppi, min_height=options.height * ppi,
-        min_border=0, toolbar_location=None)
+        min_border=0, toolbar_location=None,
+        background_fill_color=None, border_fill_color=None, background_fill_alpha=0.0
+    )
     plot.output_backend = "svg"
 
     hover = HoverTool()
@@ -120,7 +122,7 @@ def plot_bokeh():
 
         glyph = Text(x="x", y="y", text="text", text_color=col, text_font_size="fs", text_baseline="top",
                      text_align="left")
-        glyph.text_font = value("Roboto Mono")
+        glyph.text_font = value("Rubik")
         ds = ColumnDataSource(
             dict(x=df.x, y=df.y, text=df.text, fs=df.font_size, topic=df.topic, col=df.col))
         plot.add_glyph(ds, glyph)
@@ -146,7 +148,8 @@ def plot_bokeh():
         items=[(p, [t]) for p, t in topic_glyphs.items()],
         location="center", orientation="vertical",
         border_line_color="black",
-        title='Party'
+        title='Party',
+        background_fill_alpha=0.0
     )
     plot.add_layout(legend, "left")
 
