@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid
+from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid, MultiLine
 
 from wordstream.boxes import build_boxes
 from wordstream.draw import draw_fact_check, DrawOptions, draw_parlament
@@ -13,6 +13,7 @@ font_path = Path("../fonts/RobotoMono-VariableFont_wght.ttf")
 s = 43
 random.seed(s)
 np.random.seed(s)
+
 
 def pt_to_px(ppi, pt: float) -> float:
     # 1 pt = 1/72 inches
@@ -26,6 +27,7 @@ def px_to_pt(ppi, px: int) -> float:
 
 
 assert pt_to_px(100, px_to_pt(100, 10)) == 10
+
 
 def font_size_conversion(ppi, font_size, ppi_base=72):
     """ I think the libraries use  """
@@ -51,11 +53,12 @@ def plot_matplotlib():
             # apparently matplotlib also uses pixels? use ppi of plot to calculate pixels
             font_size = pt_to_px(ppi, word["font_size"])
             # font_size = word["font_size"]
-            ax.text(x=word["x"], y=word["y"], s=word["text"], color=col, font=font_path, fontsize=font_size, ha="left", va="top")
+            ax.text(x=word["x"], y=word["y"], s=word["text"], color=col, font=font_path, fontsize=font_size, ha="left",
+                    va="top")
             ax.plot(word["x"], word["y"], 'ro')
 
     ax.set_xlim(0, options.width)
-    ax.set_ylim(options.height/2, -options.height/2)
+    ax.set_ylim(options.height / 2, -options.height / 2)
 
     plt.show(dpi=ppi)
     # plt.savefig("../../mat_img.svg")
@@ -63,10 +66,15 @@ def plot_matplotlib():
 
 party_col = {
     "F": "blue",
-    "G": "green",
-    "L": "orange",
+    "G": "limegreen",
+    "L": "gold",
     "S": "red",
-    "V": "black"
+    "V": "black",
+    "B": "darkorange",
+    "A": "purple",
+    "T": "orange",
+    "N": "magenta",
+    "PJ": "grey"
 }
 
 party_name = {
@@ -74,16 +82,21 @@ party_name = {
     "G": "Grüne",
     "L": "Liberales Forum",
     "S": "SPÖ",
-    "V": "ÖVP"
+    "V": "ÖVP",
+    "B": "BZÖ",
+    "A": "ohne Klub",
+    "T": "Team Stronach",
+    "N": "NEOS",
+    "PJ": "PILZ/JETZT"
 }
 
-def plot_bokeh():
+
+def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
     from bokeh.io import curdoc, show
     from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend, FixedTicker
     from bokeh.core.properties import value
 
-    options = DrawOptions(width=20, height=10, min_font_size=10, max_font_size=30)
-    placements, data = draw_parlament(options)
+    placements, data = draw_parlament(options, legislative_periods=legislative_periods)
     topics = list(placements.keys())
 
     ppi = 72
@@ -112,10 +125,74 @@ def plot_bokeh():
     """
     plot.add_tools(hover)
 
+    # creade boxes and add x-axis
+    boxes = build_boxes(data, options.width, options.height)
+    x_index = boxes[list(boxes.keys())[0]].index.values.tolist()
+    label_dict = {}
+    for i, s in zip(x_index, data.df["Datum"]):
+        label_dict[i] = str(s.year)
+
+    xaxis = LinearAxis(ticker=FixedTicker(ticks=x_index))
+    plot.add_layout(xaxis, 'below')
+    plot.xaxis[0].major_label_overrides = label_dict
+    plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
+
+    # Find x-axis positions of start of legislative period
+    #xpos = [list(filter(lambda x: label_dict[x] == str(timestamp.year), label_dict))[0] for period, timestamp in
+    #        data.segment_start.items()]
+    # generate datasource for lines for legislative periods
+
+    x_pos_list = list(label_dict.keys())
+    dates_list = list(label_dict.values())
+
+
+    period_xs = []
+    period_ys = []
+    period_label = []
+    for period, timestamp in data.segment_start.items():
+        startidx = dates_list.index(str(timestamp.year))
+        if startidx == 0:
+            x_pos = x_pos_list[startidx]
+        elif len(dates_list) == startidx+1:
+            # legislative period started in current year. (use the with of last year to calculate position
+            year_width = options.width - x_pos_list[startidx]
+            day_of_year = int(timestamp.strftime("%j"))
+            x_pos = x_pos_list[startidx] + year_width * day_of_year/365
+        else:
+            year_width = x_pos_list[startidx + 1] - x_pos_list[startidx]
+            day_of_year = int(timestamp.strftime("%j"))
+            x_pos = x_pos_list[startidx] + year_width * day_of_year / 365
+        period_xs.append([x_pos, x_pos])
+        period_ys.append([-options.height / 2, options.height / 2])
+        period_label.append(period)
+
+    segments = ColumnDataSource(dict(
+        xs=period_xs,
+        ys=period_ys,
+        text=period_label
+    ))
+    segments_text = ColumnDataSource(dict(
+        x=[xs[0] for xs in period_xs],
+        y=[ys[1] for ys in period_ys],
+        text=period_label
+    ))
+
+    #segments = ColumnDataSource(dict(
+    #    xs=[[x, x] for x in xpos],
+    #    ys=[[-options.height / 2, options.height / 2] for period in data.segment_start.keys()]))
+
+    period_segments = MultiLine(xs="xs", ys="ys", line_color="black", line_width=1, line_dash="dashed")
+    plot.add_glyph(segments, period_segments)
+    period_text = Text(x='x', y='y', text='text', text_font_style='bold')
+    plot.add_glyph(segments_text, period_text)
+
     topic_glyphs = dict()
     for topic in topics:
         col = party_col[topic]
         df = pd.DataFrame.from_records(placements[topic])
+        if df.size == 0:
+            # No topics of club could be placed
+            continue
         df["font_size"] = df["font_size"].apply(lambda v: f"{pt_to_px(ppi, v)}px")
         df["topic"] = party_name[topic]
         df["col"] = col
@@ -133,16 +210,6 @@ def plot_bokeh():
         legend_renderer = plot.add_glyph(ds_legend, points)
         topic_glyphs[party_name[topic]] = legend_renderer
 
-    boxes = build_boxes(data, options.width, options.height)
-    x_index = boxes[list(boxes.keys())[0]].index.values.tolist()
-    label_dict = {}
-    for i, s in zip(x_index, data.df["Datum"]):
-        label_dict[i] = str(s.year)
-
-    xaxis = LinearAxis(ticker=FixedTicker(ticks=x_index))
-    plot.add_layout(xaxis, 'below')
-    plot.xaxis[0].major_label_overrides = label_dict
-    plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
 
     legend = Legend(
         items=[(p, [t]) for p, t in topic_glyphs.items()],
@@ -153,7 +220,7 @@ def plot_bokeh():
     )
     plot.add_layout(legend, "left")
 
-    plot.y_range = Range1d(options.height/2, -options.height/2)
+    plot.y_range = Range1d(options.height / 2, -options.height / 2)
     plot.x_range = Range1d(0, max(x_index) + x_index[1])
 
     curdoc().add_root(plot)
@@ -171,5 +238,6 @@ def plot_bokeh():
 
 
 if __name__ == '__main__':
-    plot_bokeh()
-
+    options = DrawOptions(width=24, height=12, min_font_size=10, max_font_size=30)
+    legislative_periods = ["XXIII","XXIV","XXV"]
+    plot_bokeh(options, legislative_periods)
