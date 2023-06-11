@@ -90,7 +90,7 @@ def export_df_to_csv(path: str, df: pd.DataFrame) -> None:
 
 if __name__ == '__main__':
 
-    legis_periods = [20,21]
+    legis_periods = [22,23,24,25,26,27]
     roman_periods = [int_to_roman(n) for n in legis_periods]
 
     for period in roman_periods:

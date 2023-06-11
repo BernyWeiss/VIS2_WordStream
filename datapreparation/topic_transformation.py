@@ -18,12 +18,6 @@ from nltk.tokenize import word_tokenize
 
 decision_needed =  0
 
-PARTY_MAPPING = {'V': "ÖVP",
-                 'S': "SPÖ",
-                 'F': "FPÖ",
-                 'L': "Liberales Forum",
-                 'G': "Grüne"}
-
 
 ADDITIONAL_STOPWORDS = ["dr", "mag", "abs.", "abs", "nr", "§§", "nr.", "bundesgesetz", "bundesminister", "abgeordneter", "abgeordnete",
                         "mitglied", "mitglieder", "gemäss", "abgeordneten", "antrag", "satz", "dr.", "jedoch", "daher",
@@ -134,7 +128,9 @@ def choose_document_and_return_text(doc_links: list) -> str:
         if len(pdf_indices)>1:
             for i in pdf_indices:
                 print(f'Doctitles where there are multiple pdfs: {i}:{doc_links[i]["title"]}')
-            doc_link = decide_on_doc(doc_links[pdf_indices])
+            doc_link = decide_on_doc([doc_links[idx] for idx in pdf_indices])
+            if doc_link != "":
+                return get_pdf_and_extract_text(doc_link)
     except KeyError as e:
         print(KeyError)
         return ""
@@ -143,8 +139,10 @@ def choose_document_and_return_text(doc_links: list) -> str:
 def decide_on_doc(doc_links: list) -> str:
     global decision_needed
     decision_needed += 1
+    for doc_link in doc_links:
+        if "elektr" in doc_link["title"]:
+            return doc_link["link"]
     return ""
-    pass
 
 
 
@@ -212,16 +210,13 @@ def preprocess_text(text: str) -> list[str]:
 
 
 if __name__ == '__main__':
-    legislative_period = "XXI"
+    legislative_period = "XXVII"
     path = "../data/" + legislative_period + "/"
     filename = "antraege.csv"
 
     clean_df = import_and_cleanup_csv(path, filename, legislative_period)
-
     only_fractions_and_documents = clean_df.loc[:, ["Datum", "Fraktionen", "DocumentLinks"]]
-
     generate_fulltext_tsv(only_fractions_and_documents)
-
 
     # use this to generate topic files based on eurovoc
     #generate_tsv(clean_df, path,"eurovoc.tsv", "EUROVOC")
