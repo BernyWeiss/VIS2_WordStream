@@ -2,20 +2,26 @@ from dataclasses import dataclass
 import pandas as pd
 from matplotlib.path import Path
 
-from wordstream.util import WordStreamData, load_fact_check
+from wordstream.util import WordStreamData
 
 @dataclass
 class Box:
+    """class to represent a box in which words can be drawn.
+    has information about position and size"""
     x: float
     y: float
     width: float
     height: float
 
 def box_from_row(row) -> Box:
+    """generates Box object from row where name is x and 'y', 'width' and 'height' are stored in columns"""
     return Box(row.name, row['y'], row['width'], row['height'])
 
 def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.DataFrame]:
-    tf = total_frequencies(data)  # represents height of box
+    """Method to calculate sizes and positions of boxes based on WordStreamData
+    Boxes are vertically centered and height is determined by amount of data per timeunit
+    """
+    tf = _total_frequencies(data)  # represents height of box
     height_scaling = height / tf.sum(axis=1).max()  # scale max frequency to height
     tf *= height_scaling
     num_boxes = len(data.df)
@@ -43,6 +49,8 @@ def build_boxes(data: WordStreamData, width: int, height: int) -> dict[str, pd.D
 
 
 def topic_boxes_to_path(topic_boxes: pd.DataFrame) -> Path:
+    """Merges boxes per topic (fraction) into a path along x-axis"""
+
     # top and bottom points of silhouette polygon
     top_points = []
     bottom_points = []
@@ -57,18 +65,9 @@ def topic_boxes_to_path(topic_boxes: pd.DataFrame) -> Path:
     return Path(points)
 
 
-def total_frequencies(data: WordStreamData) -> pd.DataFrame:
+def _total_frequencies(data: WordStreamData) -> pd.DataFrame:
     return data.df[data.topics].apply(lambda topic: topic.apply(lambda words: sum([w.frequency for w in words])))
 
 
-def max_y(boxes: dict[str, pd.DataFrame]) -> float:
-    # max = -min since silhouette is symmetrical along y-axis
-    min_stream = list(boxes.keys())[0]
-    return -boxes[min_stream]["y"].min()
 
 
-if __name__ == '__main__':
-    data = load_fact_check()
-    boxes = build_boxes(data, 10, 10)
-    m_y = max_y(boxes)
-    print(m_y)

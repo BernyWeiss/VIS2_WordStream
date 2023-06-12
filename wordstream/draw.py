@@ -9,7 +9,7 @@ from matplotlib.patches import Rectangle, PathPatch
 from matplotlib.path import Path
 
 from wordstream.boxes import build_boxes, Box, box_from_row, topic_boxes_to_path
-from wordstream.util import WordStreamData, load_fact_check, Word, get_max_sudden, load_parlament_data
+from wordstream.util import WordStreamData, Word, get_max_sudden, load_parlament_data
 from wordstream.placement import Placement, WordPlacement
 
 
@@ -169,10 +169,6 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement, p
             ax.plot(x_px,y_px, 'ro')
 
 
-def draw_fact_check(options: DrawOptions) -> dict:
-    data = load_fact_check()
-    placement = place_words(data, options.width, options.height, font_size=(options.min_font_size, options.max_font_size))
-    return placement
 
 def draw_parlament(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False) -> tuple[dict, WordStreamData]:
     data = load_parlament_data(legislative_periods, fulltext=fulltext)
@@ -183,5 +179,4 @@ def draw_parlament(options: DrawOptions, legislative_periods: list[str], fulltex
 if __name__ == '__main__':
     options = DrawOptions(width=24, height=12, min_font_size=15, max_font_size=35)
     draw_parlament(options)
-    #draw_fact_check(options)
 
