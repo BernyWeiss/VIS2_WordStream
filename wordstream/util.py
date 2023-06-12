@@ -129,6 +129,17 @@ def load_parlament_data(periods: list[str], fulltext: bool = False)-> WordStream
     data.df = data.df[(data.df[time_col] >= start) & (data.df[time_col] <= end)].reset_index(drop=True)
     data.df = calculate_word_frequency(data.df, data.topics)
     data.df = calculate_sudden(data.df, data.topics, top=50)
+
+    # change order of columns to improve box placements
+    col_names = data.topics
+    first_cols = ["F","S","V"]
+    other_cols = [name for name in col_names if name not in first_cols]
+    first_cols.extend(other_cols)
+    data.topics = first_cols
+    sorted_colums = []
+    sorted_colums.extend(data.topics)
+    sorted_colums.append(time_col)
+    data.df = data.df[sorted_colums]
     return data
 
 

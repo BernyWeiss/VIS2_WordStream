@@ -238,6 +238,6 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
 
 
 if __name__ == '__main__':
-    options = DrawOptions(width=24, height=12, min_font_size=10, max_font_size=30)
-    legislative_periods = ["XXIII","XXIV","XXV"]
+    options = DrawOptions(width=30, height=12, min_font_size=10, max_font_size=30)
+    legislative_periods = ["XX", "XXI", "XXII","XXIII", "XXIV","XXV","XXVI"]
     plot_bokeh(options, legislative_periods)
