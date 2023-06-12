@@ -2,14 +2,10 @@
 from functools import total_ordering
 
 import pandas as pd
-import math
 
-from collections.abc import Sequence
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from operator import add
-
 
 # Definitions
 
@@ -45,16 +41,6 @@ class Word:
 
 
 # Functions
-def int_to_roman(n: int) -> str:
-    result = ''
-    allSymbol = ['M', 'CM', 'D', "CD", 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I']
-    value = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
-    for index in range(len(value)):
-        quotient = n // value[index]  # to know the number of times the symbol should be written
-        symbol = quotient * allSymbol[index]  # to write the symbol in specific times
-        result += symbol  # this is to add the symbol to the result.
-        n = n % value[index]  # this is to get the remainder which will be use again
-    return result
 
 
 def load_data(path: str, time_col: str = "time", drop: tuple[str] = ("source",)) -> WordStreamData:

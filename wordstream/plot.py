@@ -91,12 +91,12 @@ party_name = {
 }
 
 
-def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
+def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False):
     from bokeh.io import curdoc, show
     from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend, FixedTicker
     from bokeh.core.properties import value
 
-    placements, data = draw_parlament(options, legislative_periods=legislative_periods)
+    placements, data = draw_parlament(options, legislative_periods=legislative_periods, fulltext=fulltext)
     topics = list(placements.keys())
 
     ppi = 72
@@ -240,4 +240,4 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
 if __name__ == '__main__':
     options = DrawOptions(width=30, height=12, min_font_size=10, max_font_size=30)
     legislative_periods = ["XX", "XXI", "XXII","XXIII", "XXIV","XXV","XXVI", "XXVII"]
-    plot_bokeh(options, legislative_periods)
+    plot_bokeh(options, legislative_periods, fulltext=False)
