@@ -91,7 +91,7 @@ party_name = {
 }
 
 
-def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
+def plot_bokeh(options: DrawOptions, legislative_periods: list[str]) -> tuple[str, str]:
     from bokeh.io import curdoc, show
     from bokeh.models import ColumnDataSource, Plot, Text, Range1d, HoverTool, Circle, Legend, FixedTicker
     from bokeh.core.properties import value
@@ -224,20 +224,21 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str]):
     plot.x_range = Range1d(0, max(x_index) + x_index[1])
 
     curdoc().add_root(plot)
-    from bokeh.core.templates import FILE
-    import jinja2
-    with open("../fonts/template_custom.html", "r") as f:
-        template = jinja2.Template(f.read())
 
     from bokeh.embed import components
     plot_script, div = components(plot, wrap_script=True)
-
-    html = template.render(plot_1_script=plot_script, plot_1_div=div)
-    with open("plot.html", "w") as f:
-        f.write(html)
+    return plot_script, div
 
 
 if __name__ == '__main__':
     options = DrawOptions(width=30, height=12, min_font_size=10, max_font_size=30)
     legislative_periods = ["XX", "XXI", "XXII","XXIII", "XXIV","XXV","XXVI", "XXVII"]
-    plot_bokeh(options, legislative_periods)
+    script, div = plot_bokeh(options, legislative_periods)
+
+    import jinja2
+    with open("../fonts/template_custom.html", "r") as f:
+        template = jinja2.Template(f.read())
+
+    html = template.render(plot_1_script=script, plot_1_div=div)
+    with open("../html/plot.html", "w") as f:
+        f.write(html)
