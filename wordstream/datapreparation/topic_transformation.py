@@ -15,19 +15,17 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords as sw
 from nltk.tokenize import word_tokenize
 # Definitions
-
-decision_needed =  0
-
-
 ADDITIONAL_STOPWORDS = ["dr", "mag", "abs.", "abs", "nr", "§§", "nr.", "bundesgesetz", "bundesminister", "abgeordneter", "abgeordnete",
                         "mitglied", "mitglieder", "gemäss", "abgeordneten", "antrag", "satz", "dr.", "jedoch", "daher",
                         "wurde", "folgt", "10","angefügt","kraft", "gilt", "sinne", "fassung", "artikel", "bundesregierung", "sowie",
                         "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "1.", "2.", "''", "``", "bgbl", "geändert",
                         "nationalrat"]
+"""Additional Stopwords to filter from fulltext of documents"""
 
 # Functions
 
 def fill_na_and_convert_columns_to_object_types(colnames: list[str], df: pd.DataFrame) -> pd.DataFrame:
+    """Replaces empty values in given columns of DataFrame with a string which represents an empty list"""
     for col in colnames:
         # Replace Lists with empty string with np.nan
         df[df[col] == '[""]'] = np.nan
@@ -41,10 +39,12 @@ def fill_na_and_convert_columns_to_object_types(colnames: list[str], df: pd.Data
 
 
 def get_unique_fractions(df: pd.DataFrame) -> list[str]:
+    """Returns all unique fractions in dataframe"""
     return list(set(chain.from_iterable(df["Fraktionen"])))
 
 
 def import_and_cleanup_csv(path, filename, legislative_period) -> pd.DataFrame:
+    """Reads CSv file, cleans data by setting proper datatypes, and replacing empty fields"""
     motions_df = pd.read_csv(filepath_or_buffer=path + filename, header=0, index_col=["ITYP", "INR"])
     motions_df["GP_CODE"] = legislative_period
     motions_df = motions_df.set_index("GP_CODE", append=True)
@@ -63,6 +63,14 @@ def import_and_cleanup_csv(path, filename, legislative_period) -> pd.DataFrame:
 
 
 def generate_tsv(df, path, filename, column_name):
+    """Generates .tsv file which is readable by wordstream from motion Dataframe
+
+    Keyword arguments
+    df -- Dataframe of Motions. Must contain date column as "Datum" and fractions in "Fraktionen"
+    path -- path where to save the .tsv file
+    filename -- name of saved file
+    column_name -- name of column which should be used to generate tsv file. column must have list of str
+    """
     exploded_eurovoc = df[["Datum", "Fraktionen", column_name]].explode(column="Fraktionen")
     aggregate_voc = exploded_eurovoc.groupby(["Datum", "Fraktionen"]).agg(sum)
     topics_df = aggregate_voc.reset_index().pivot(index="Datum", columns="Fraktionen", values=column_name)
@@ -75,22 +83,16 @@ def generate_tsv(df, path, filename, column_name):
 
 
 def generate_fulltext_tsv(df: pd.DataFrame):
+    """Method to query fulltext from parlament.gv.at and generate .tsv file from result
+    saves them to with filename 'fulltext.tsv'"""
+
     df["DocumentLinks"] = df["DocumentLinks"].fillna("[]")
     df["DocumentLinks"] = df["DocumentLinks"].apply(lambda x: x.replace("'", '"'))
-    df = add_documents_datatypes(df)
-    document_titles = list()
+    df = _add_documents_datatypes(df)
+
     # find different documents and their types to setup rules for choosing it
-    #df.DocumentLinks.apply(lambda x: [document_titles.append(f"Typ: {doc['type']}; title: {doc['title']}") for doc in json.loads(x)])
-    #print(set(document_titles))
     df["document_text"] = df.DocumentLinks.apply(lambda x: choose_document_and_return_text(json.loads(x)))
     df["document_text"] = df["document_text"].apply(lambda x: preprocess_text(x))
-    global decision_needed
-    print(f' Found {decision_needed} motions where decision was needed')
-    # pdf_path = json.loads(df.DocumentLinks[0])[0]["link"]
-    # html_path = json.loads(df.DocumentLinks[0])[1]["link"]
-    # get_pdf_and_extract_text(pdf_path)
-    # text = get_html_and_extract_text(html_path)
-    # word_list = preprocess_text(text)
 
     generate_tsv(df, path,"fulltext.tsv", "document_text")
 
@@ -98,8 +100,12 @@ def generate_fulltext_tsv(df: pd.DataFrame):
 
 
 def choose_document_and_return_text(doc_links: list) -> str:
+    """Chooses document from doc_links based on type and title of document.
+    html is prefered, if there is no html and there are multiple pdfs,
+    documents which have "elektr" in title are prefered.
+    """
     if len(doc_links)==0:
-        print("No Doc Found")
+        # print("No Doc Found")
         return ""
     try:
         if len(doc_links)==1:
@@ -128,7 +134,7 @@ def choose_document_and_return_text(doc_links: list) -> str:
         if len(pdf_indices)>1:
             for i in pdf_indices:
                 print(f'Doctitles where there are multiple pdfs: {i}:{doc_links[i]["title"]}')
-            doc_link = decide_on_doc([doc_links[idx] for idx in pdf_indices])
+            doc_link = _decide_on_doc([doc_links[idx] for idx in pdf_indices])
             if doc_link != "":
                 return get_pdf_and_extract_text(doc_link)
     except KeyError as e:
@@ -136,9 +142,7 @@ def choose_document_and_return_text(doc_links: list) -> str:
         return ""
 
 
-def decide_on_doc(doc_links: list) -> str:
-    global decision_needed
-    decision_needed += 1
+def _decide_on_doc(doc_links: list) -> str:
     for doc_link in doc_links:
         if "elektr" in doc_link["title"]:
             return doc_link["link"]
@@ -146,7 +150,8 @@ def decide_on_doc(doc_links: list) -> str:
 
 
 
-def has_doctype(doc_dict_list: dict, doctype: str) -> bool:
+def _has_doctype(doc_dict_list: dict, doctype: str) -> bool:
+    """Checks if doc_dict_list contains a document of doctype"""
     for doc_dict in doc_dict_list:
         if doc_dict.keys().__contains__("type"):
             if doc_dict["type"] == doctype:
@@ -154,10 +159,10 @@ def has_doctype(doc_dict_list: dict, doctype: str) -> bool:
     return False
 
 
-def add_documents_datatypes(df: pd.DataFrame) -> pd.DataFrame:
+def _add_documents_datatypes(df: pd.DataFrame) -> pd.DataFrame:
     df["nDocs"] = df.DocumentLinks.apply(lambda x: len(json.loads(x)))
-    df["hasPDF"] = df.DocumentLinks.apply(lambda x: has_doctype(json.loads(x), "PDF"))
-    df["hasHTML"] = df.DocumentLinks.apply(lambda x: has_doctype(json.loads(x), "HTML"))
+    df["hasPDF"] = df.DocumentLinks.apply(lambda x: _has_doctype(json.loads(x), "PDF"))
+    df["hasHTML"] = df.DocumentLinks.apply(lambda x: _has_doctype(json.loads(x), "HTML"))
     df = df.assign(checkThis=lambda x: (x.hasPDF.astype(int) + x.hasHTML.astype(int)) != x.nDocs)
     print(f"There are {sum(df.checkThis)} out of {len(df.checkThis)} with multiple documents in a type")
     return df
@@ -166,6 +171,7 @@ def add_documents_datatypes(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_html_and_extract_text(relative_link: str) -> str:
+    """Downloads html document from parlament.gv.at/relative_link and returns text of it"""
     base_link = "https://www.parlament.gv.at"
 
     response = rq.get(base_link + relative_link)
@@ -181,6 +187,8 @@ def get_html_and_extract_text(relative_link: str) -> str:
 
 
 def get_pdf_and_extract_text(relative_link: str) -> str:
+    """Downloads pdf document from parlament.gv.at/relative_link and returns text of it"""
+
     base_link = "https://www.parlament.gv.at"
 
     pdf = rq.get(base_link + relative_link)
@@ -193,6 +201,7 @@ def get_pdf_and_extract_text(relative_link: str) -> str:
     return text
 
 def preprocess_text(text: str) -> list[str]:
+    """Tokenizes, casefolds and removes nltk german + additional stopwords. also removes all tokens of length 1"""
     tokenized_text = word_tokenize(text, "german")
 
     lower_text = [word.casefold() for word in tokenized_text]
