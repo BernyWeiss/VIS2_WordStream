@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 from wordstream.util import Word
 
 
-def value_map(from_start, from_stop, to_start, to_stop, round_value=False) -> Callable:
+def _value_map(from_start, from_stop, to_start, to_stop, round_value=False) -> Callable:
     map_func = lambda v: (v - from_start) / (from_stop - from_start) * (to_stop - to_start) + to_start
     if round_value:
         return lambda v: round(map_func(v))
@@ -52,23 +52,23 @@ class Placement:
         self.height = height
         """height of figure in inches"""
 
-        self.width_map = value_map(0, width, 0, width*ppi, round_value=True)
+        self.width_map = _value_map(0, width, 0, width * ppi, round_value=True)
         self.width_px = self.width_map(width)
         """width of figure in pixel"""
 
         # since original height is centered around 0 we map from -height/2 and height/2
-        self.height_map = value_map(-height/2, height/2, 0, height*ppi, round_value=True)
+        self.height_map = _value_map(-height / 2, height / 2, 0, height * ppi, round_value=True)
 
         # since draw.textbbox returns height and width in px we have to convert back to inches
         self.box_width_map = self.width_map
-        self.inv_box_width_map = value_map(0, width*ppi, 0, width, round_value=False)
+        self.inv_box_width_map = _value_map(0, width * ppi, 0, width, round_value=False)
 
-        self.box_height_map = value_map(0, height, 0, height*ppi, round_value=True)
-        self.inv_box_height_map = value_map(0, height*ppi, 0, height, round_value=False)
+        self.box_height_map = _value_map(0, height, 0, height * ppi, round_value=True)
+        self.inv_box_height_map = _value_map(0, height * ppi, 0, height, round_value=False)
         self.height_px = self.box_height_map(height)
         """height of figure in pixel"""
 
-        self.font_map = value_map(0, max_sudden, self.pt_to_px(min_font_size), self.pt_to_px(max_font_size), round_value=True)
+        self.font_map = _value_map(0, max_sudden, self.pt_to_px(min_font_size), self.pt_to_px(max_font_size), round_value=True)
         """Map to calculate fort size based on sudden attention measure"""
         self.img = Image.new("L", (self.width_px, self.height_px))
         """Image used to calculate placements and check collisions"""
