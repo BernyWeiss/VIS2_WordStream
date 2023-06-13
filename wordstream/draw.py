@@ -15,13 +15,24 @@ from wordstream.placement import Placement, WordPlacement
 
 @dataclass
 class DrawOptions:
+    """Class to set configuration for WordStream Visualisation."""
     width: int
+    """Width of visualisation in inches"""
     height: int
+    """Height of visualisation in inches"""
     min_font_size: float
+    "minimal font size of words placed in visualisation in pt"
     max_font_size: float
+    "maximal font size of words placed in visualisation in pt"
 
 
 def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
+    """Initializes WordPlacement by setting the word, the size of the bounding box and the sprite
+
+    Keyword arguments:
+    placement: Placement object where to place the Word in.
+    word: 'Word' object with text frequency and sudden attention measure.
+    """
     wp = WordPlacement(0, 0, 0, 0, 0, word=word)
     placement.get_size(wp)
     placement.get_sprite(wp)
@@ -29,6 +40,16 @@ def init_word_placement(placement: Placement, word: Word) -> WordPlacement:
 
 
 def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFrame, topic_polygon: Path) -> list[dict]:
+    """Places words in the boxes of a topic.
+    Does not guarantee that all words can be placed
+
+    Keyword Arguments:
+    placement -- Figure where to place the words in
+    words -- Series of words which should be placed
+    topic_boxes -- the boxes where to place the words in
+    topic_polygon -- the polygon one get's by stitching the boxes together
+    """
+
     # place all words in the first box then second and so on
     word_placements = words.apply(lambda ws: list(map(lambda w: init_word_placement(placement, w), ws))).tolist()
     n_words = words.apply(lambda ws: len(ws)).sum()
@@ -49,6 +70,15 @@ def place_topic(placement: Placement, words: pd.Series, topic_boxes: pd.DataFram
 
 
 def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[float, float]) -> dict:
+    """Calculates where the words of WordStreamData are placed and returns result
+
+    Keyword arguments:
+    data -- Fully initialized WordStreamData where sudden and frequency is set.
+    width -- width in inches of area where words should be placed.
+    height -- height in inches of area where words should be placed.
+    font_size -- tupel of minimum and maximum font size (in pt) which should be used.
+    """
+
     min_font, max_font = font_size
     ppi = 200
     boxes = build_boxes(data, width, height)
@@ -61,18 +91,30 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
 
     fig, ax = plt.subplots(1, 1, figsize=(width, height))
     ax.imshow(np.asarray(placement.img))
-    debug_draw_boxes(ax, boxes, placement, word_placements)
+    _debug_draw_boxes(ax, boxes, placement, word_placements)
     plt.show(dpi=ppi)
 
     return word_placements
 
 
 def placed_in_polygon(topic_polygon: Path, wp: WordPlacement):
+    """Checks if WordPlacement is within this polygon"""
+
     word_box = [(wp.x, wp.y), (wp.x + wp.width, wp.y), (wp.x + wp.width, wp.y + wp.height), (wp.x, wp.y + wp.height)]
     return topic_polygon.contains_path(Path(word_box))
 
 
 def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.DataFrame, topic_polygon: Path) -> bool:
+    """Tries to place word in figure by searching for unoccupied space in within the given box and polygon.
+    Returns True of word could be placed, False if not
+
+    Keyword arguments:
+
+    word -- Word which should be placed, Coordinates and placed attribute are set if placed sucessfully
+    placement -- Image where word should be placed in. Is used to check if word collides with any other words
+    box -- Box where word should be placed
+    topic_polygon -- Path for a topic, used to see if word can be placed fully in area of the given topic
+    """
     maxDelta = (box.width * box.width + box.height * box.height) ** 0.5
     startX = box.x + (box.width * (random.random() + .5) / 2)
     startY = box.y + (box.height * (random.random() + .5) / 2)
@@ -116,6 +158,10 @@ def place(word: WordPlacement, placement: Placement, box: Box, topic_boxes: pd.D
 
 
 def achemedeanSpiral(size):
+    """Function to calculate an Archemedean Spiral
+    initialized with a maximum size.
+
+    returns function where next position can be calculated"""
     e = size[0] / size[1]
 
     def spiral(t):
@@ -125,6 +171,11 @@ def achemedeanSpiral(size):
 
 
 def rectangularSpiral(size):
+    """Function to calculate a rectangular Spiral
+    initialized with a maximum size.
+
+    returns function where next position can be calculated
+    """
     dy = 4
     dx = dy * size[0] / size[1]
     x = 0
@@ -152,7 +203,8 @@ spirals = {
 }
 
 
-def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement, placements: dict[str, list]):
+def _debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement, placements: dict[str, list]):
+    """Draws boxes - used for debugging to see if boxes are drawn properly"""
     for tb, col in zip(boxes.items(), ["red", "green", "blue", "purple"]):
         topic, topic_boxes = tb
         for x in topic_boxes.index:
@@ -171,6 +223,14 @@ def debug_draw_boxes(ax, boxes: dict[str, pd.DataFrame], placement: Placement, p
 
 
 def draw_parlament(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False) -> tuple[dict, WordStreamData]:
+    """ Loads the data for given legislative periods, places them in figure generated by Drawoptions
+    returns the placements and WordStreamData
+
+    Keyword arguments:
+    options -- Configuration for size of figure and font
+    legislative_periods -- List of roman numerals to indicate what data should be loaded
+    fulltext -- True: fulltext of motions is drawn; otherwise eurovoc keywords are used.
+    """
     data = load_parlament_data(legislative_periods, fulltext=fulltext)
     placement = place_words(data, options.width, options.height, font_size=(options.min_font_size, options.max_font_size))
     return placement, data
