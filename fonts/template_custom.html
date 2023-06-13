@@ -8,18 +8,38 @@
 
 
     <style>
-      html, body {
-        box-sizing: border-box;
-        height: 100%;
-        margin: 0;
-        padding: 0;
+      html {
+        max-width: 100ch;
+        padding: 3em 1em;
+        margin: auto;
+        line-height: 1.75;
+        font-size: 1em;
 
-        font-kerning: none;
+        font-family: "Rubik";
+      }
+
+      svg {
+        max-width: 70ch;
+      }
+
+      .overflow {
+        overflow-x: scroll;
+        overflow-y: hidden;
+      }
+
+      h1,h2,h3,h4,h5,h6 {
+        margin: 3em 0 1em;
+      }
+
+      p,ul,ol {
+        margin-bottom: 2em;
+        color: #1d1d1d;
       }
 
       body {
-        background-color: rgba(255, 235, 205, 0.50);
+        background-color: rgba(255, 235, 205, 0.25);
       }
+
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,10 +55,106 @@
 
   <body>
 
-  <p>I can write anything before the plot...</p>
-  {{  plot_1_script }}
-  {{  plot_1_div }}
-  <p>Or after the plot! </p>
+  <h1>Austrian Parliament WordStream</h1>
+
+  <h2>Introduction</h2>
+
+  <p>This document presents a visual representation of the motions put forth by different political
+    parties in the Austrian parliament. We utilize WordStream to depict the topics that each party
+    aimed to discuss over time.</p>
+
+  <p>Our analysis encompasses 7 legislative periods spanning from 1996 to the present.
+    The data is grouped by year, with the most significant terms displayed in a larger font size.
+    The importance of a term is determined by its increased frequency compared to the previous year.
+    This approach aims to highlight noteworthy shifts in party sentiment, rather than displaying
+    commonly used terms associated with a particular party.
+    Furthermore, the height of the plot reflects the total frequency of the words that each party put forth
+    during a specific time.
+    However, this is not directly equivalent to the total number of motions of each party.
+  </p>
+
+  <p>To enhance the visibility of topic changes, we represent multiple legislative periods
+    within a single plot. The terms presented are derived either from the EuroVoc
+    taxonomy, which classifies motions based on predefined categories, or from the
+    full text of the motions themselves. EuroVoc, a multilingual thesaurus created and
+    maintained by the Publications Office of the European Union, provides a
+    standardized set of terms and concepts, ensuring efficient organization and retrieval
+    of EU documents and resources across various languages.
+    This classification system proves ideal for our purpose as it offers a clear categorization
+    of motion topics. Conversely, utilizing the full text provides a more detailed understanding of
+    motion content, albeit with the presence of specialized vocabulary and symbols not covered by
+    common stop-word dictionaries.</p>
+
+  <h2>Legislative Period XX-XXII</h2>
+
+  <p>The Liberales Forum's participation in the parliament concluded with Legislative Period XX.
+    In the subsequent periods, namely during the Schüssel I and II governments,
+    the parliament consisted solely of the FPÖ, ÖVP, SPÖ, and Greens.
+    Notably, when the SPÖ transitioned out of the government, their motion submissions increased significantly.</p>
+
+  <div>
+    {{  plot_1[0] }}
+    {{  plot_1[1] }}
+  </div>
+
+  <p>In addition to the EuroVoc-based topics, we also display the same periods using
+    terms extracted from the full text of motions. To accomplish this, we parsed all
+    the documents associated with the motion submissions, resulting in a comprehensive
+    word list. However, it is important to note that this approach introduced numerous
+    nonsensical words due to the presence of document designations and specialized vocabulary.
+    Moreover, handling plural and singular forms of words posed additional challenges.
+  </p>
+
+  <p>
+    Despite these limitations, analyzing the full text provides more detailed insights
+    into the content of the motions presented by the parties. Nevertheless, due to the
+    limited availability of these documents and their associated drawbacks, we
+    made the decision to prioritize EuroVoc as the primary source for retrieving topics.
+  </p>
+
+  <div>
+    {{  plot_2[0] }}
+    {{  plot_2[1] }}
+  </div>
+
+  <h2>Legislative Period XXIII-XXV</h2>
+
+  <p>During these periods, the parliamentary landscape witnessed the emergence of several new parties,
+    including BZÖ, Team Stronach, and NEOS. Meanwhile, the SPÖ and ÖVP governments are
+    reflected in the comparatively infrequent motion submissions of these parties.
+  </p>
+
+  <div>
+    {{  plot_3[0] }}
+    {{  plot_3[1] }}
+  </div>
+
+  <h2>Legislative Period XXVI-XXVII</h2>
+
+  <p>In the 26th legislative period, the green party ceased to be part of the parliament,
+    making way for the newly formed Liste Pilz/JETZT. However, during their brief time in
+    parliament, the new party did not present a substantial number of motions.
+    In the subsequent 27th legislative period, the green party made a return to the parliament,
+    even securing a position in the government. The number of motions from the FPÖ, which
+    was now an opposition party once again, skyrocketed. </p>
+  <div>
+    {{  plot_4[0] }}
+    {{  plot_4[1] }}
+  </div>
+
+  <h2>All Legislative Periods</h2>
+
+  <p>By visualizing all legislative periods we get a more complete picture about how the discussions in parliament evelved.
+  We can also see the surge in the number of motions around 2020 during the COVID19 pandamic.
+  </p>
+
+  <div class="overflow">
+    {{  plot_5[0] }}
+    {{  plot_5[1] }}
+  </div>
+
+  <br>
+  <p>by <b>Bernhard Weissenbach</b> and <b>Matthias Matt</b>.</p>
 
   </body>
 

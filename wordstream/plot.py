@@ -3,7 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid, MultiLine
+from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid, \
+    MultiLine
 
 from wordstream.boxes import build_boxes
 from wordstream.draw import DrawOptions, draw_parlament
@@ -43,6 +44,18 @@ PARTY_NAME = {
 }
 """Full name of fractions"""
 
+GOVERNMENTS = {
+    "XX": "SPÖ/ÖVP",
+    "XXI": "ÖVP/FPÖ",
+    "XXII": "ÖVP/FPÖ",
+    "XXIII": "ÖVP/FPÖ + SPÖ/ÖVP",
+    "XXIV": "SPÖ/ÖVP",
+    "XXV": "SPÖ/ÖVP",
+    "XXVI": "SPÖ/ÖVP + ÖVP/FPÖ",
+    "XXVII": "ÖVP/Grüne",
+}
+"""Governments during legislative periods of parliament"""
+
 
 def pt_to_px(ppi, pt: float) -> float:
     """Converts pt to pixel"""
@@ -60,8 +73,7 @@ def px_to_pt(ppi, px: int) -> float:
 assert pt_to_px(100, px_to_pt(100, 10)) == 10
 
 
-
-def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False) -> tuple[str,str]:
+def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False) -> tuple[str, str]:
     """Plats WordStream visualisation in bokeh and generates standalone html document
 
     Keyword arguments:
@@ -95,10 +107,6 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
                 <span style="font-size: 17px; font-weight: bold;">@text</span><br>
                 <span style="font-size: 15px; font-weight: bold; color: @col">@topic</span>
             </div>
-            <div>
-                <span style="font-size: 15px;">Location</span>
-                <span style="font-size: 10px; color: #696;">($x, $y)</span>
-            </div>
         </div>
     """
     plot.add_tools(hover)
@@ -116,13 +124,12 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
     plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
 
     # Find x-axis positions of start of legislative period
-    #xpos = [list(filter(lambda x: label_dict[x] == str(timestamp.year), label_dict))[0] for period, timestamp in
+    # xpos = [list(filter(lambda x: label_dict[x] == str(timestamp.year), label_dict))[0] for period, timestamp in
     #        data.segment_start.items()]
     # generate datasource for lines for legislative periods
 
     x_pos_list = list(label_dict.keys())
     dates_list = list(label_dict.values())
-
 
     period_xs = []
     period_ys = []
@@ -131,11 +138,11 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
         startidx = dates_list.index(str(timestamp.year))
         if startidx == 0:
             x_pos = x_pos_list[startidx]
-        elif len(dates_list) == startidx+1:
+        elif len(dates_list) == startidx + 1:
             # legislative period started in current year. (use the with of last year to calculate position
             year_width = options.width - x_pos_list[startidx]
             day_of_year = int(timestamp.strftime("%j"))
-            x_pos = x_pos_list[startidx] + year_width * day_of_year/365
+            x_pos = x_pos_list[startidx] + year_width * day_of_year / 365
         else:
             year_width = x_pos_list[startidx + 1] - x_pos_list[startidx]
             day_of_year = int(timestamp.strftime("%j"))
@@ -147,15 +154,17 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
     segments = ColumnDataSource(dict(
         xs=period_xs,
         ys=period_ys,
-        text=period_label
+        text=period_label,
+        topic=[f"Gesetzgebungsperiode {p} ({GOVERNMENTS[p]})" for p in period_label]
     ))
     segments_text = ColumnDataSource(dict(
         x=[xs[0] for xs in period_xs],
         y=[ys[1] for ys in period_ys],
-        text=period_label
+        text=period_label,
+        topic=[f"Gesetzgebungsperiode {p} ({GOVERNMENTS[p]})" for p in period_label]
     ))
 
-    #segments = ColumnDataSource(dict(
+    # segments = ColumnDataSource(dict(
     #    xs=[[x, x] for x in xpos],
     #    ys=[[-options.height / 2, options.height / 2] for period in data.segment_start.keys()]))
 
@@ -188,7 +197,6 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
         legend_renderer = plot.add_glyph(ds_legend, points)
         topic_glyphs[PARTY_NAME[topic]] = legend_renderer
 
-
     legend = Legend(
         items=[(p, [t]) for p, t in topic_glyphs.items()],
         location="center", orientation="vertical",
@@ -209,15 +217,23 @@ def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: b
 
 
 if __name__ == '__main__':
-    options = DrawOptions(width=30, height=12, min_font_size=10, max_font_size=30)
-    legislative_periods = ["XX", "XXI", "XXII","XXIII", "XXIV","XXV","XXVI", "XXVII"]
-
-    script, div = plot_bokeh(options, legislative_periods, fulltext=False)
+    options = DrawOptions(width=11, height=6, min_font_size=10, max_font_size=25)
+    # legislative_periods = ["XX", "XXI", "XXII","XXIII", "XXIV","XXV","XXVI", "XXVII"]
+    plots = {
+        "plot_1": plot_bokeh(options, ["XX", "XXI", "XXII"], fulltext=False),
+        "plot_2": plot_bokeh(options, ["XX", "XXI", "XXII"], fulltext=True),
+        "plot_3": plot_bokeh(options, ["XXIII", "XXIV", "XXV"], fulltext=False),
+        "plot_4": plot_bokeh(options, ["XXVI", "XXVII"], fulltext=False),
+        "plot_5": plot_bokeh(DrawOptions(width=32, height=10, min_font_size=10, max_font_size=25),
+                             ["XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII"],
+                             fulltext=False),
+    }
 
     import jinja2
+
     with open("../fonts/template_custom.html", "r") as f:
         template = jinja2.Template(f.read())
 
-    html = template.render(plot_1_script=script, plot_1_div=div)
+    html = template.render(**plots)
     with open("../html/plot.html", "w") as f:
         f.write(html)
