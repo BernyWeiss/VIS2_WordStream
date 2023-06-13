@@ -235,5 +235,5 @@ if __name__ == '__main__':
         template = jinja2.Template(f.read())
 
     html = template.render(**plots)
-    with open("../html/plot.html", "w") as f:
+    with open("../html/index.html", "w") as f:
         f.write(html)
