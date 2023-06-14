@@ -1,6 +1,6 @@
 # Austrian Parliament WordStream
 
-![Screenshot!](screenshot.jpg "Screenshot")
+![Screenshot!](https://github.com/BernyWeiss/VIS2_WordStream/blob/main/screenshot.jpg?raw=true "Screenshot")
 
 This project presents a visual representation of the motions put forth by different political
 parties in the Austrian parliament. We utilize WordStream to depict the topics that each party
