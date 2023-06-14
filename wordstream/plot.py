@@ -74,7 +74,7 @@ assert pt_to_px(100, px_to_pt(100, 10)) == 10
 
 
 def plot_bokeh(options: DrawOptions, legislative_periods: list[str], fulltext: bool = False) -> tuple[str, str]:
-    """Plats WordStream visualisation in bokeh and generates standalone html document
+    """Plots WordStream visualisation in bokeh and generates standalone html document
 
     Keyword arguments:
     options -- DrawOptions for bokeh plot

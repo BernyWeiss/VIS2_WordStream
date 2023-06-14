@@ -111,17 +111,18 @@
     Moreover, handling plural and singular forms of words posed additional challenges.
   </p>
 
-  <p>
-    Despite these limitations, analyzing the full text provides more detailed insights
-    into the content of the motions presented by the parties. Nevertheless, due to the
-    limited availability of these documents and their associated drawbacks, we
-    made the decision to prioritize EuroVoc as the primary source for retrieving topics.
-  </p>
-
   <div>
     {{  plot_2[0] }}
     {{  plot_2[1] }}
   </div>
+
+  <p>
+    Despite these limitations, analyzing the full text provides more detailed insights
+    into the content of the motions and the language used by the parties. We are certain that a higher quality of visualisations
+    could be achieved by developing a more sophisticated preprocessing pipeline which uses corpus-specific stopwords,
+    lemmatisations and named entity recognition. Nevertheless, due to the associated drawbacks of text documents, we
+    made the decision to prioritize EuroVoc as the primary source for retrieving topics.
+  </p>
 
   <h2>Legislative Period XXIII-XXV</h2>
 
@@ -150,14 +151,33 @@
 
   <h2>All Legislative Periods</h2>
 
-  <p>By visualizing all legislative periods we get a more complete picture about how the discussions in parliament evelved.
-  We can also see the surge in the number of motions around 2020 during the COVID19 pandamic.
+  <p>By visualizing all legislative periods we get a more complete picture about how the discussions in parliament evolved.
+  We can also see the surge in the number of motions around 2020 during the COVID19 pandamic. Due to the big difference
+    in the number of motions, a lot of available screenspace in earlier legislative periods is not utilised. We see this
+    as a limitation of the WordStream approach.
   </p>
 
   <div class="overflow">
     {{  plot_5[0] }}
     {{  plot_5[1] }}
   </div>
+
+  <h2>Dataset</h2>
+
+  <p>
+  The dataset consist of motions submitted in the National Assembly of the
+  <a href="https://www.parlament.gv.at/recherchieren/gegenstaende/index.html?FP_001NRBR=NR&FP_001GP_CODE=XXVII&FP_001VHG=ANTR">Austrian Parliament</a>.
+    Included motions from the legislative periods XX to XXVII. Earlier motions do not provide EuroVoc keywords and documents are usually scanned.
+  The data was obtained through the Open Data API by requesting the full list of motions per legislative period. Unfortunately
+  this only provides some details for the motions. To get all data related to motions, like the documents or members of parliament who submitted them,
+  each motion must be requested and parsed individually. The scripts we used to query and parse the data are also provided in the
+  <a href="https://github.com/BernyWeiss/VIS2_WordStream/tree/main/wordstream/datapreparation">Github Repository</a>. For the WordStream visualisation
+    on the fulltext corpus of motions a simple preprocessing pipline was developed. It consists of tokenization, casefolding and stopwords removal.
+    For stopword removal we used a standard german stopword list an added terms which appeared very frequently but didn't provide any semantic meaning.
+  </p>
+
+
+
 
   <br>
   <p>by <b>Bernhard Weissenbach</b> and <b>Matthias Matt</b>.</p>
