@@ -4,7 +4,7 @@ import numpy
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from wordstream.util import Word
+from src.util import Word
 
 
 def _value_map(from_start, from_stop, to_start, to_stop, round_value=False) -> Callable:
@@ -138,7 +138,7 @@ class Placement:
 
 if __name__ == '__main__':
     word = WordPlacement(x=10, y=10, height=0, width=0, font_size=0, word=Word("test", frequency=3, sudden=3))
-    placement = Placement(10, 4, ppi=100, min_font_size=10, max_sudden=10, max_font_size=30, font_path="../fonts/RobotoMono-VariableFont_wght.ttf")
+    placement = Placement(10, 4, ppi=100, min_font_size=10, max_sudden=10, max_font_size=30, font_path="fonts/RobotoMono-VariableFont_wght.ttf")
 
     placement.get_size(word)
     placement.get_sprite(word)

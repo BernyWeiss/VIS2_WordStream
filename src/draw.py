@@ -8,9 +8,9 @@ import pandas as pd
 from matplotlib.patches import Rectangle, PathPatch
 from matplotlib.path import Path
 
-from wordstream.boxes import build_boxes, Box, box_from_row, topic_boxes_to_path
-from wordstream.util import WordStreamData, Word, get_max_sudden, load_parlament_data
-from wordstream.placement import Placement, WordPlacement
+from src.boxes import build_boxes, Box, box_from_row, topic_boxes_to_path
+from src.util import WordStreamData, Word, get_max_sudden, load_parlament_data, font_path
+from src.placement import Placement, WordPlacement
 
 
 @dataclass
@@ -83,7 +83,7 @@ def place_words(data: WordStreamData, width: int, height: int, font_size=tuple[f
     ppi = 200
     boxes = build_boxes(data, width, height)
     max_sudden = get_max_sudden(data)
-    placement = Placement(width, height, ppi, max_sudden, min_font, max_font, "../fonts/Rubik-Medium.ttf")
+    placement = Placement(width, height, ppi, max_sudden, min_font, max_font, font_path + "/Rubik-Medium.ttf")
     word_placements = dict()
     for topic in data.topics:
         topic_polygon = topic_boxes_to_path(boxes[topic])

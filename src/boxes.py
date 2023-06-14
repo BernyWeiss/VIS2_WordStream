@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pandas as pd
 from matplotlib.path import Path
 
-from wordstream.util import WordStreamData
+from src.util import WordStreamData
 
 @dataclass
 class Box:

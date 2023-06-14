@@ -6,11 +6,9 @@ import pandas as pd
 from bokeh.models import LegendItem, GlyphRenderer, Axis, DatetimeTickFormatter, DatetimeTicker, LinearAxis, Grid, \
     MultiLine
 
-from wordstream.boxes import build_boxes
-from wordstream.draw import DrawOptions, draw_parlament
-
-font_path = Path("../fonts/RobotoMono-VariableFont_wght.ttf")
-"""Path where font for WordStreamVis is stored """
+from src.boxes import build_boxes
+from src.draw import DrawOptions, draw_parlament
+from src.util import font_path, html_path
 
 s = 43
 random.seed(s)
@@ -231,9 +229,9 @@ if __name__ == '__main__':
 
     import jinja2
 
-    with open("../fonts/template_custom.html", "r") as f:
+    with open(font_path + "/template_custom.html", "r") as f:
         template = jinja2.Template(f.read())
 
     html = template.render(**plots)
-    with open("../html/index.html", "w") as f:
+    with open(html_path + "/index.html", "w") as f:
         f.write(html)

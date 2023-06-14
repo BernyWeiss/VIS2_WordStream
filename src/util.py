@@ -1,4 +1,5 @@
 # Imports
+import os.path
 from functools import total_ordering
 
 import pandas as pd
@@ -6,6 +7,10 @@ import pandas as pd
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
+
+data_path = os.path.join(os.path.dirname(__file__), "data")
+font_path = os.path.join(os.path.dirname(__file__), "fonts")
+html_path = os.path.join(os.path.dirname(__file__), "../html")
 
 # Definitions
 
@@ -142,7 +147,7 @@ def load_parlament_data(periods: list[str], fulltext: bool = False)-> WordStream
     time_col = "Datum"
     start = GP_TIME_INTERVALS[periods[0]][0]
     end = GP_TIME_INTERVALS[periods[len(periods)-1]][1]
-    data = load_multiple_periods("../data/", filename, periods, time_col, ())
+    data = load_multiple_periods(data_path, filename, periods, time_col, ())
     data.df = _group_by_date(data.df, group_col=time_col, freq="Y")
     data.df = data.df[(data.df[time_col] >= start) & (data.df[time_col] <= end)].reset_index(drop=True)
     data.df = calculate_word_frequency(data.df, data.topics)
