@@ -4,6 +4,7 @@
 
 plot.html
 html/*
+doc
 
 # User-specific stuff
 .idea/**/workspace.xml
